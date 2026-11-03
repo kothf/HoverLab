@@ -29,6 +29,7 @@ export function TopBar({ config, saved, prefs, canExport, onLoad, onSave, onDele
       <div className="brand">
         <img src="./icon.svg" alt="" width={28} height={28} />
         <span>HoverLab</span>
+        <span className="app-version" title="HoverLab version">v{__APP_VERSION__}</span>
         <span className="config-name" title="Current configuration">{config.name}</span>
       </div>
       <nav className="actions">

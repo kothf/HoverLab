@@ -315,3 +315,5 @@ th .help, dt .help { margin-left: 5px; }
 @media (prefers-reduced-motion: reduce) { .sketch-spin { animation: none; } }
 .sketch-caption { display: flex; flex-direction: column; align-items: center; font-size: 12px; color: var(--muted); text-align: center; }
 .sketch-caption strong { color: var(--text); font-size: 13px; }
+
+.app-version { font: 500 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; }
