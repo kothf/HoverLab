@@ -219,6 +219,18 @@ describe('optimizer', () => {
     }
   });
 
+  it('returns only designs with no errors or warnings', () => {
+    for (const t of [DEFAULT_TARGETS, { ...DEFAULT_TARGETS, mode: 'payload' as const, flightTime: 15 }, { ...DEFAULT_TARGETS, chemistry: 'liion' as const, maxPropIn: 15, maxCells: 12, frameWeight: 900, payload: 500 }]) {
+      const { candidates } = optimize(t);
+      expect(candidates.length).toBeGreaterThan(0);
+      for (const c of candidates) {
+        const out = simulate(c.config);
+        expect(out.ok).toBe(true);
+        if (out.ok) expect(out.results.warnings.map((w) => w.message), c.config.name).toEqual([]);
+      }
+    }
+  });
+
   it('ranks endurance results by hover time', () => {
     const { candidates } = optimize(DEFAULT_TARGETS);
     for (let i = 1; i < candidates.length; i++) expect(candidates[i - 1].score).toBeGreaterThanOrEqual(candidates[i].score);
