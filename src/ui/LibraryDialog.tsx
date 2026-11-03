@@ -75,7 +75,7 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const items = fuzzyFilter(library[kind] as { id: string; brand: string; model: string; custom?: boolean }[], query, (i) => `${i.brand} ${i.model}`, 500);
+  const items = fuzzyFilter(library[kind] as { id: string; brand: string; model: string; custom?: boolean; note?: string }[], query, (i) => `${i.brand} ${i.model}`, 500);
 
   const save = () => {
     if (!draft) return;
@@ -174,6 +174,7 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
             <div key={it.id} className="lib-item">
               <span>
                 {it.brand} {it.model} {it.custom && <span className="tag">custom</span>}
+                {it.note && <span className="muted small"> · {it.note}</span>}
               </span>
               <span className="muted small">
                 {FIELDS[kind].filter((f) => f.type !== 'select').slice(0, 4).map((f) => `${f.label.split(' (')[0]} ${(it as unknown as Record<string, unknown>)[f.key] ?? '—'}`).join(' · ')}

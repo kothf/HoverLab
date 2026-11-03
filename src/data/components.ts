@@ -1,3 +1,5 @@
+import { ALIEXPRESS } from './aliexpress';
+import { b, e, f, m, p } from './builders';
 import type { Chemistry, EscConfig, Layout, MotorConfig, PropConfig } from '../engine/types';
 
 // Built-in library. Values are typical figures from manufacturer listings and public test data,
@@ -10,6 +12,8 @@ interface Base {
   brand: string;
   model: string;
   custom?: boolean;
+  /** Where the figures come from when they are partly estimated, shown next to the part. */
+  note?: string;
 }
 
 export interface MotorItem extends Base, Required<Omit<MotorConfig, 'name'>> {}
@@ -42,23 +46,7 @@ export interface Library {
   frame: FrameItem[];
 }
 
-const m = (id: string, brand: string, model: string, kv: number, weight: number, rm: number, i0: number, maxCurrent: number, maxPower: number, v0 = 10): MotorItem => ({
-  id, brand, model, kv, weight, rm, i0, v0, maxCurrent, maxPower,
-});
-const p = (id: string, brand: string, model: string, diameter: number, pitch: number, blades: number, weight: number, ct: number | null = null, cp: number | null = null): PropItem => ({
-  id, brand, model, diameter, pitch, blades, weight, ct, cp,
-});
-const b = (id: string, brand: string, model: string, chemistry: Chemistry, form: 'pack' | 'cell', s: number, capacity: number, cRating: number, cBurst: number, resistance: number, weight: number): BatteryItem => ({
-  id, brand, model, chemistry, form, s, capacity, cRating, cBurst, resistance, weight,
-});
-const e = (id: string, brand: string, model: string, format: '4in1' | 'single', maxCurrent: number, burstCurrent: number, resistance: number, weight: number): EscItem => ({
-  id, brand, model, format, maxCurrent, burstCurrent, resistance, weight,
-});
-const f = (id: string, brand: string, model: string, layout: Layout, weight: number, maxPropIn: number, dragArea: number | null = null): FrameItem => ({
-  id, brand, model, layout, weight, maxPropIn, dragArea,
-});
-
-export const BUILTIN: Library = {
+const CORE: Library = {
   motor: [
     m('tm-1404-3800', 'T-Motor', 'F1404 3800KV', 3800, 9.5, 135, 0.6, 15, 220),
     m('bh-1507-3800', 'BrotherHobby', 'Avenger 1507 3800KV', 3800, 18.5, 85, 1.0, 26, 390),
@@ -129,4 +117,12 @@ export const BUILTIN: Library = {
     f('fr-hex-960', 'Generic', '960 hexacopter', 'hexa', 1900, 18),
     f('fr-x8-1200', 'Generic', 'X8 coaxial heavy lift', 'x8coax', 3200, 22),
   ],
+};
+
+export const BUILTIN: Library = {
+  motor: [...CORE.motor, ...ALIEXPRESS.motor],
+  prop: [...CORE.prop, ...ALIEXPRESS.prop],
+  battery: [...CORE.battery, ...ALIEXPRESS.battery],
+  esc: [...CORE.esc, ...ALIEXPRESS.esc],
+  frame: [...CORE.frame, ...ALIEXPRESS.frame],
 };

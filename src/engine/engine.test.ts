@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BUILTIN } from '../data/components';
 import { PRESETS } from '../data/presets';
 import { decodeConfig, encodeConfig } from '../lib/share';
 import { fuzzyFilter } from '../lib/fuzzy';
@@ -161,6 +162,22 @@ describe('optimizer', () => {
     expect(b.max.totalThrust / a.max.totalThrust).toBeGreaterThan(0.95);
     expect(b.max.totalThrust / a.max.totalThrust).toBeLessThan(1.05);
     expect(b.hoverTime / a.hoverTime).toBeGreaterThan(0.95);
+  });
+});
+
+describe('component library', () => {
+  it('has unique ids and physically valid motor, prop and battery entries', () => {
+    const all = Object.values(BUILTIN).flat() as { id: string }[];
+    expect(new Set(all.map((x) => x.id)).size).toBe(all.length);
+    for (const mo of BUILTIN.motor) for (const k of ['kv', 'rm', 'weight', 'maxCurrent'] as const) expect(mo[k], mo.id).toBeGreaterThan(0);
+    for (const pr of BUILTIN.prop) expect(pr.pitch / pr.diameter, pr.id).toBeLessThan(1.2);
+    for (const ba of BUILTIN.battery) expect(ba.capacity, ba.id).toBeGreaterThan(0);
+  });
+  it('every built-in motor simulates on a matching preset without errors', () => {
+    for (const mo of BUILTIN.motor) {
+      const out = simulate({ ...five, motor: { ...five.motor, ...mo } });
+      expect(out.ok, mo.id).toBe(true);
+    }
   });
 });
 

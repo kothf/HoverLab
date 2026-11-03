@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { fuzzyFilter } from '../lib/fuzzy';
 
-interface Props<T extends { id: string; brand: string; model: string; custom?: boolean }> {
+interface Props<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }> {
   items: T[];
   current?: string;
   detail: (item: T) => string;
@@ -10,7 +10,7 @@ interface Props<T extends { id: string; brand: string; model: string; custom?: b
 }
 
 /** Fuzzy-search dropdown over library parts (FRS 2.2.3), e.g. "tmotor 2207" or "gem 5". */
-export function ComponentPicker<T extends { id: string; brand: string; model: string; custom?: boolean }>({ items, current, detail, onPick, placeholder }: Props<T>) {
+export function ComponentPicker<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }>({ items, current, detail, onPick, placeholder }: Props<T>) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -66,7 +66,10 @@ export function ComponentPicker<T extends { id: string; brand: string; model: st
                   {it.brand} {it.model}
                   {it.custom && <span className="tag">custom</span>}
                 </span>
-                <span className="picker-detail">{detail(it)}</span>
+                <span className="picker-detail">
+                  {detail(it)}
+                  {it.note && <em> · {it.note}</em>}
+                </span>
               </button>
             </li>
           ))}
