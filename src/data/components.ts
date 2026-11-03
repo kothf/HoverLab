@@ -1,5 +1,6 @@
 import { ALIEXPRESS } from './aliexpress';
 import { b, e, f, m, p } from './builders';
+import { EXTENDED } from './extended';
 import type { Chemistry, EscConfig, Layout, MotorConfig, PropConfig } from '../engine/types';
 
 // Built-in library. Values are typical figures from manufacturer listings and public test data,
@@ -120,9 +121,9 @@ const CORE: Library = {
 };
 
 export const BUILTIN: Library = {
-  motor: [...CORE.motor, ...ALIEXPRESS.motor],
-  prop: [...CORE.prop, ...ALIEXPRESS.prop],
-  battery: [...CORE.battery, ...ALIEXPRESS.battery],
-  esc: [...CORE.esc, ...ALIEXPRESS.esc],
-  frame: [...CORE.frame, ...ALIEXPRESS.frame],
+  motor: [...CORE.motor, ...ALIEXPRESS.motor, ...EXTENDED.motor],
+  prop: [...CORE.prop, ...ALIEXPRESS.prop, ...EXTENDED.prop],
+  battery: [...CORE.battery, ...ALIEXPRESS.battery, ...EXTENDED.battery],
+  esc: [...CORE.esc, ...ALIEXPRESS.esc, ...EXTENDED.esc],
+  frame: [...CORE.frame, ...ALIEXPRESS.frame, ...EXTENDED.frame],
 };

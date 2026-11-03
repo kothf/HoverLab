@@ -5,6 +5,7 @@ import type { Config } from '../engine/types';
 import { download } from '../lib/exporters';
 import { fuzzyFilter } from '../lib/fuzzy';
 import { parseLibraryJson } from '../lib/storage';
+import type { AnyPart } from './applyPart';
 
 interface Props {
   library: Library; // merged (custom first)
@@ -12,6 +13,10 @@ interface Props {
   config: Config;
   onChangeCustom: (l: Library) => void;
   onClose: () => void;
+  /** Kind to open on, and whether to start a new part prefilled from the current build. */
+  initialKind?: ComponentKind;
+  initialModel?: string | null;
+  onUse?: (kind: ComponentKind, part: AnyPart) => void;
 }
 
 const KINDS: { key: ComponentKind; label: string }[] = [
@@ -62,10 +67,12 @@ function fromConfig(kind: ComponentKind, c: Config): Record<string, string> {
   }
 }
 
-export function LibraryDialog({ library, custom, config, onChangeCustom, onClose }: Props) {
-  const [kind, setKind] = useState<ComponentKind>('motor');
+export function LibraryDialog({ library, custom, config, onChangeCustom, onClose, initialKind = 'motor', initialModel = null, onUse }: Props) {
+  const [kind, setKind] = useState<ComponentKind>(initialKind);
   const [query, setQuery] = useState('');
-  const [draft, setDraft] = useState<Record<string, string> | null>(null);
+  const [draft, setDraft] = useState<Record<string, string> | null>(() =>
+    initialModel === null ? null : { ...fromConfig(initialKind, config), brand: '', model: initialModel || '' },
+  );
   const [message, setMessage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -77,7 +84,7 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
 
   const items = fuzzyFilter(library[kind] as { id: string; brand: string; model: string; custom?: boolean; note?: string }[], query, (i) => `${i.brand} ${i.model}`, 500);
 
-  const save = () => {
+  const save = (use = false) => {
     if (!draft) return;
     const errors: string[] = [];
     const item: Record<string, unknown> = { id: `${kind}-${Date.now()}`, brand: draft.brand?.trim() || 'Custom', model: draft.model?.trim() || 'Unnamed' };
@@ -104,6 +111,11 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
     }
     onChangeCustom({ ...custom, [kind]: [item, ...custom[kind]] });
     setDraft(null);
+    if (use && onUse) {
+      onUse(kind, item as unknown as AnyPart);
+      onClose();
+      return;
+    }
     setMessage(`Saved ${item.brand} ${item.model}.`);
   };
 
@@ -147,6 +159,7 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
         {message && <p className="muted small">{message}</p>}
         {draft && (
           <div className="card draft">
+            <p className="muted small">Values start from your current build; change whatever differs. Custom parts are saved in this browser and can be exported as JSON.</p>
             <div className="grid3">
               <label className="field"><span className="field-label">Brand</span><input value={draft.brand ?? ''} onChange={(e) => setDraft({ ...draft, brand: e.target.value })} /></label>
               <label className="field"><span className="field-label">Model</span><input value={draft.model ?? ''} onChange={(e) => setDraft({ ...draft, model: e.target.value })} /></label>
@@ -164,7 +177,8 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
               ))}
             </div>
             <div className="row">
-              <button className="btn primary small" onClick={save}>Save to library</button>
+              {onUse && <button className="btn primary small" onClick={() => save(true)}>Save &amp; use in this build</button>}
+              <button className={`btn small${onUse ? '' : ' primary'}`} onClick={() => save()}>Save to library</button>
               <button className="btn ghost small" onClick={() => setDraft(null)}>Cancel</button>
             </div>
           </div>

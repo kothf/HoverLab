@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Library } from './data/components';
+import type { ComponentKind, Library } from './data/components';
 import { DEFAULT_CONFIG } from './data/presets';
 import type { Config, Results } from './engine/types';
 import { download, reportCsv, slug } from './lib/exporters';
@@ -17,6 +17,7 @@ import {
   type Prefs,
 } from './lib/storage';
 import type { Snapshot } from './ui/Charts';
+import { applyPart } from './ui/applyPart';
 import { ConfigPanel } from './ui/ConfigPanel';
 import { UnitsContext } from './ui/context';
 import { LibraryDialog } from './ui/LibraryDialog';
@@ -39,7 +40,7 @@ export default function App() {
   const [saved, setSaved] = useState<Config[]>(loadSavedConfigs);
   const [custom, setCustom] = useState<Library>(loadCustomLibrary);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
-  const [showLibrary, setShowLibrary] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState<{ kind: ComponentKind; model: string | null } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const reqRef = useRef(0);
 
@@ -147,12 +148,12 @@ export default function App() {
           onDeleteSaved={deleteSaved}
           onImportConfig={importConfig}
           onExport={exportAs}
-          onLibrary={() => setShowLibrary(true)}
+          onLibrary={() => setLibraryOpen({ kind: 'motor', model: null })}
           onPrefs={setPrefs}
         />
         <main className="workspace">
           <aside className="left">
-            <ConfigPanel config={config} library={library} auw={results?.auw ?? null} onChange={setConfig} />
+            <ConfigPanel config={config} library={library} auw={results?.auw ?? null} onChange={setConfig} onDefine={(kind, query) => setLibraryOpen({ kind, model: query })} />
             <OptimizerPanel
               config={config}
               onApply={(c) => {
@@ -179,7 +180,21 @@ export default function App() {
         <footer className="footer muted small">
           Estimates within typical ±10–15 % of bench data when motor and prop constants are accurate. Always verify against manufacturer data before flight.
         </footer>
-        {showLibrary && <LibraryDialog library={library} custom={custom} config={config} onChangeCustom={updateCustom} onClose={() => setShowLibrary(false)} />}
+        {libraryOpen && (
+          <LibraryDialog
+            library={library}
+            custom={custom}
+            config={config}
+            initialKind={libraryOpen.kind}
+            initialModel={libraryOpen.model}
+            onChangeCustom={updateCustom}
+            onUse={(kind, part) => {
+              setConfig((c) => applyPart(c, kind, part));
+              notify(`Using ${part.brand} ${part.model}`);
+            }}
+            onClose={() => setLibraryOpen(null)}
+          />
+        )}
         {toast && <div className="toast" role="status">{toast}</div>}
       </div>
     </UnitsContext.Provider>

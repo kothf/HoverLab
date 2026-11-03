@@ -8,7 +8,7 @@ Professional multirotor powertrain calculator and inverse design optimizer. It r
 - **Results**: KPI cards (hover and mixed flight time, thrust-to-weight, AUW, specific thrust, peak power, max speed, climb rate, best range), status indicators and warnings (ESC overload, motor over 80 °C, C-rate, voltage sag, tip Mach, prop too large for frame, low T/W).
 - **Charts**: throttle vs thrust, current and power, motor/ESC efficiency and g/W, motor temperature over time at full throttle, payload vs flight time. Up to 3 configurations can be pinned and overlaid.
 - **Inverse optimizer**: maximum endurance or maximum payload modes sweep prop diameter and pitch, cell count, motor size, Kv and battery energy (10k+ permutations in well under 1.5 s) and return the top 5 configurations. A Kv and cell-count matcher keeps thrust identical when changing S.
-- **Component library**: motors, props, batteries/cells, ESCs and frames with fuzzy search, custom parts saved in the browser, JSON import/export.
+- **Component library**: about 230 motors, props, batteries/cells, ESCs and frames (including AliExpress brands) with fuzzy search. If a part is missing, "Can't find it? Define your own" in every part search opens an editor prefilled from the current build; custom parts are saved in the browser and can be exported or imported as JSON.
 - **Quality of life**: presets, metric/imperial units, dark/light theme, save/load configurations, CSV report, PDF report via print, shareable link that carries the whole configuration in the URL.
 
 ## Development
