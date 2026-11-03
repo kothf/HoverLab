@@ -80,7 +80,6 @@ export const HELP: Record<string, string> = {
   'Max hover throttle': 'Highest acceptable hover throttle. Lower leaves more control authority; 50–60 % is typical.',
   'Min cells': 'Smallest cell count to consider.',
   'Max cells': 'Largest cell count to consider.',
-  'New cell count': 'Cell count you want to switch to. The matcher gives the Kv that keeps the same prop speed and thrust.',
 
   // Results
   'Hover time':

@@ -10,6 +10,8 @@ import {
   estimatePropCt,
   estimatePropWeight,
 } from '../engine/physics';
+import { useEffect, useState } from 'react';
+import { fromS, rewoundMotor } from '../engine/optimizer';
 import type { Chemistry, Config, Layout } from '../engine/types';
 import { fmt } from '../lib/units';
 import { applyPart, type AnyPart } from './applyPart';
@@ -36,6 +38,16 @@ const frameDetail = (f: FrameItem) => `${LAYOUTS[f.layout].label} · ${f.weight}
 
 export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Props) {
   const system = useUnits();
+  // When the cell count changes, suggest the Kv that keeps the same prop speed (FRS 3.3 mode 3).
+  const [kvHint, setKvHint] = useState<{ fromS: number; motorKv: number } | null>(null);
+  useEffect(() => setKvHint(null), [c.motor.kv, c.motor.name]);
+  const changeS = (s: number) => {
+    const origin = kvHint ?? { fromS: c.battery.s, motorKv: c.motor.kv };
+    setKvHint(s === origin.fromS ? null : origin);
+    onChange({ ...c, battery: { ...c.battery, s } });
+  };
+  const suggestedKv = kvHint ? fromS(kvHint.fromS, c.battery.s, kvHint.motorKv) : null;
+
   const up = <K extends 'env' | 'frame' | 'battery' | 'esc' | 'motor' | 'prop'>(k: K, patch: Partial<Config[K]>, markEdited = true) => {
     const next = { ...c[k], ...patch } as Config[K];
     if (markEdited && 'name' in next && !('name' in patch)) (next as { name?: string }).name = edited((next as { name?: string }).name);
@@ -110,7 +122,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
             onChange={(v) => up('battery', { chemistry: v })}
           />
           <div className="grid2 tight">
-            <NumberField label="Series S" value={b.s} integer onChange={(v) => up('battery', { s: v ?? 1 })} step={1} min={1} max={24} />
+            <NumberField label="Series S" value={b.s} integer onChange={(v) => changeS(Math.max(1, Math.round(v ?? 1)))} step={1} min={1} max={24} />
             <NumberField label="Parallel P" value={b.p} integer onChange={(v) => up('battery', { p: v ?? 1 })} step={1} min={1} max={20} />
           </div>
           <NumberField label="Capacity per cell" unitLabel="mAh" value={b.capacity} onChange={(v) => up('battery', { capacity: v ?? 100 })} step={100} />
@@ -120,6 +132,21 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
           <NumberField label="Pack weight" quantity="mass" value={b.weight} auto={batAuto} onChange={(v) => up('battery', { weight: v })} step={10} />
           <NumberField label="Usable capacity" unitLabel="%" value={b.maxDischarge * 100} onChange={(v) => up('battery', { maxDischarge: (v ?? 80) / 100 })} step={5} min={10} max={100} />
         </div>
+        {kvHint && suggestedKv !== null && suggestedKv !== c.motor.kv && (
+          <div className="kv-hint" role="status">
+            <span>
+              Changed from {kvHint.fromS}S to {b.s}S. To keep the same prop speed and thrust, use a <strong>{suggestedKv} KV</strong> motor (now {c.motor.kv} KV).
+            </span>
+            <span className="row">
+              <button className="btn small primary" onClick={() => onChange({ ...c, motor: rewoundMotor(c.motor, suggestedKv) })}>
+                Use {suggestedKv} KV
+              </button>
+              <button className="btn small ghost" onClick={() => setKvHint(null)}>
+                Keep motor
+              </button>
+            </span>
+          </div>
+        )}
       </Section>
 
       <Section icon="esc" title="ESC" summary={`${c.esc.maxCurrent} A cont. / ${c.esc.burstCurrent} A burst`}>

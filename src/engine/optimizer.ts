@@ -14,7 +14,7 @@ import {
 } from './physics';
 import { MAX_TEMP_WINDOW_S, flightMinutes, maxPoint, opAtThrust, thermalModel, type Drive } from './solver';
 import { simulate } from './simulate';
-import type { Chemistry, Config, Layout } from './types';
+import type { Chemistry, Config, Layout, MotorConfig } from './types';
 
 export type OptimizerMode = 'endurance' | 'payload';
 
@@ -81,6 +81,8 @@ const ENERGY_WH = [2, 4, 7, 11, 16, 22, 30, 40, 55, 75, 100, 130, 170, 220, 300,
 const ESC_RATINGS = [6, 12, 20, 30, 35, 45, 55, 65, 80, 100, 120, 150, 200];
 const LIION_CELL_MAH = 5000;
 const MAX_TIP_MACH = 0.7;
+// Designs kept per (prop diameter, cell count) family before the full warning check.
+const PER_FAMILY = 8;
 // Battery may make up at most half of the all-up weight; beyond that endurance gains vanish.
 const MAX_BATTERY_TO_DRY = 1;
 
@@ -126,7 +128,7 @@ export function optimize(t: OptimizerTargets): OptimizerResult {
   const diameters = DIAMETERS.filter((d) => d <= t.maxPropIn + 1e-9 && d >= minD);
   if (!diameters.length) diameters.push(t.maxPropIn);
 
-  const best = new Map<string, Raw>();
+  const best = new Map<string, Raw[]>();
   let evaluated = 0;
   let feasible = 0;
 
@@ -190,9 +192,12 @@ export function optimize(t: OptimizerTargets): OptimizerResult {
               }
               feasible++;
               const key = `${d}|${s}`;
-              const prev = best.get(key);
-              if (!prev || score > prev.score) {
-                best.set(key, { d, pitch, blades, s, p, capacity, motorMass, kv, score });
+              const list = best.get(key) ?? [];
+              if (list.length < PER_FAMILY || score > list[list.length - 1].score) {
+                list.push({ d, pitch, blades, s, p, capacity, motorMass, kv, score });
+                list.sort((a, b) => b.score - a.score);
+                if (list.length > PER_FAMILY) list.pop();
+                best.set(key, list);
               }
             }
           }
@@ -201,8 +206,20 @@ export function optimize(t: OptimizerTargets): OptimizerResult {
     }
   }
 
-  const ranked = [...best.values()].sort((a, b) => b.score - a.score).slice(0, 5);
-  const candidates = ranked.map((r) => toCandidate(r, t)).filter((c): c is Candidate => c !== null);
+  // The sweep uses quick checks; every shortlisted design then gets the full simulation and is
+  // dropped if it shows any error or warning. Keep the best clean design per (prop, cells) family.
+  const ranked = [...best.values()].flat().sort((a, b) => b.score - a.score);
+  const candidates: Candidate[] = [];
+  const families = new Set<string>();
+  for (const r of ranked) {
+    if (candidates.length >= 5) break;
+    const key = `${r.d}|${r.s}`;
+    if (families.has(key)) continue;
+    const c = toCandidate(r, t);
+    if (!c) continue;
+    families.add(key);
+    candidates.push(c);
+  }
   return { candidates, evaluated, feasible, elapsedMs: performance.now() - start };
 }
 
@@ -238,7 +255,7 @@ function toCandidate(r: Raw, t: OptimizerTargets): Candidate | null {
     prop: { name: `Generic ${r.d}x${r.pitch}x${r.blades}`, diameter: r.d, pitch: r.pitch, blades: r.blades, ct: null, cp: null, weight: null },
   };
   const out = simulate(config);
-  if (!out.ok || !out.results.hover) return null;
+  if (!out.ok || !out.results.hover || out.results.warnings.length > 0) return null;
   const res = out.results;
   return {
     config,
@@ -262,12 +279,22 @@ function toCandidate(r: Raw, t: OptimizerTargets): Candidate | null {
  */
 export function matchKv(c: Config, newS: number): Config {
   const k = c.battery.s / newS;
-  const kv = Math.round(c.motor.kv * k);
-  const ratio = kv / c.motor.kv;
   return {
     ...c,
     name: `${c.name} (${newS}S matched)`,
-    motor: { ...c.motor, name: `${c.motor.name ?? 'Motor'} rewound ${kv}KV`, kv, rm: +(c.motor.rm / ratio ** 2).toFixed(1), i0: +(c.motor.i0 * ratio).toFixed(2), maxCurrent: Math.round(c.motor.maxCurrent / ratio) },
+    motor: rewoundMotor(c.motor, fromS(c.battery.s, newS, c.motor.kv)),
     battery: { ...c.battery, s: newS, capacity: Math.round(c.battery.capacity * k), resistance: +(c.battery.resistance / k).toFixed(2) },
   };
+}
+
+/** Kv that keeps prop speed when the pack goes from oldS to newS cells. */
+export function fromS(oldS: number, newS: number, kv: number): number {
+  return Math.round((kv * oldS) / newS);
+}
+
+/** Same motor size rewound to another Kv: Rm ∝ 1/Kv², I₀ ∝ Kv, max current ∝ Kv. */
+export function rewoundMotor(m: MotorConfig, kv: number): MotorConfig {
+  const ratio = kv / m.kv;
+  const base = (m.name ?? 'Motor').replace(/ rewound \d+KV$/, '');
+  return { ...m, name: `${base} rewound ${kv}KV`, kv, rm: +(m.rm / ratio ** 2).toFixed(1), i0: +(m.i0 * ratio).toFixed(2), maxCurrent: Math.round(m.maxCurrent * ratio) };
 }
