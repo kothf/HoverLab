@@ -1,6 +1,6 @@
 # HoverLab
 
-Professional multirotor powertrain calculator and inverse design optimizer. It runs entirely in the browser (installable as an offline PWA) and implements the [Functional Requirements Specification](docs/FRS.md).
+Professional multirotor powertrain calculator and inverse design optimizer. It runs entirely in the browser (installable as an offline PWA) and implements the [Functional Requirements Specification](docs/FRS.md). Physics models are checked against literature in [docs/physics-validation.md](docs/physics-validation.md).
 
 ## Features
 

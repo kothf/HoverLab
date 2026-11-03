@@ -7,9 +7,9 @@ import { unit } from '../lib/units';
 import { HELP } from '../ui/help';
 import { readFileSync } from 'node:fs';
 import { DEFAULT_TARGETS, matchKv, optimize } from './optimizer';
-import { airDensity } from './physics';
+import { airDensity, estimateMotor, estimatePropCp, estimatePropCt, pressureAt, speedOfSound } from './physics';
 import { buildDrive, simulate, validateConfig } from './simulate';
-import { maxPoint, opAtThrottle, opAtThrust } from './solver';
+import { inducedVelocity, maxPoint, opAtThrottle, opAtThrust, opInFlight } from './solver';
 import type { Config, Results } from './types';
 
 // Reference 5" build (T-Motor 2207 1950KV, 5.1x4.66x3, 6S 1300) used for bench-range and edge-case tests.
@@ -36,6 +36,66 @@ describe('atmosphere', () => {
   it('drops with altitude and heat', () => {
     expect(airDensity(2000, 2)).toBeCloseTo(1.007, 2); // ISA at 2000 m is 2 °C
     expect(airDensity(0, 35)).toBeLessThan(airDensity(0, 15));
+  });
+});
+
+describe('literature checks', () => {
+  it('ISA pressure and speed of sound match the 1976 standard atmosphere', () => {
+    // U.S. Standard Atmosphere 1976: p(1000 m) = 89 876 Pa, p(5000 m) = 54 048 Pa; a(15 °C) = 340.3 m/s.
+    expect(pressureAt(1000) / 89876).toBeCloseTo(1, 3);
+    expect(pressureAt(5000) / 54048).toBeCloseTo(1, 2); // formula uses geometric height
+    expect(speedOfSound(15)).toBeCloseTo(340.3, 1);
+    expect(speedOfSound(-56.5)).toBeCloseTo(295.1, 0);
+  });
+
+  it('Kt = 60 / (2π·Kv) (Drela first-order motor model)', () => {
+    const m = estimateMotor(1000, 50);
+    const kt = 60 / (2 * Math.PI * 1000);
+    const km = 0.0223 * Math.pow(50 / 32, 0.79);
+    expect(m.rm / 1000).toBeCloseTo((kt / km) ** 2, 12);
+  });
+
+  it('estimated prop coefficients keep figure of merit in the measured 0.45–0.8 band', () => {
+    // FM = Ct^1.5 / (Cp·√(π/2)) for n-based coefficients; UIUC static data for small props spans ~0.5–0.75.
+    for (const pd of [0.3, 0.45, 0.6, 0.75, 0.9, 1.1])
+      for (const b of [2, 3, 4, 5, 6]) {
+        const fm = estimatePropCt(10, 10 * pd, b) ** 1.5 / (estimatePropCp(10, 10 * pd, b) * Math.sqrt(Math.PI / 2));
+        expect(fm, `P/D ${pd}, ${b} blades`).toBeGreaterThan(0.45);
+        expect(fm, `P/D ${pd}, ${b} blades`).toBeLessThan(0.8);
+      }
+  });
+
+  it('Glauert induced velocity reduces to the hover, climb and high-speed limits', () => {
+    expect(inducedVelocity(8, 0, 0)).toBeCloseTo(8, 9);
+    const vc = 5; // axial climb: v_i = −Vc/2 + √((Vc/2)² + v_h²)
+    expect(inducedVelocity(8, vc, 0)).toBeCloseTo(-vc / 2 + Math.sqrt((vc / 2) ** 2 + 64), 8);
+    expect(inducedVelocity(8, 0, 60) / (64 / 60)).toBeCloseTo(1, 2); // edgewise: v_i → v_h²/V
+  });
+
+  it('forward-flight power curve has the classic bucket shape', () => {
+    const dr = buildDrive(five);
+    const r = run(five);
+    const hoverP = opInFlight(dr, r.auw / dr.motors, 0, 0).mechPowerPerMotor;
+    expect(hoverP / r.hover!.mechPowerPerMotor).toBeCloseTo(1, 6);
+    // Translational lift: a slow cruise needs less power than hover (Bauersfeld & Scaramuzza: P_e/P_h ≈ 0.91).
+    const slow = opInFlight(dr, r.auw / dr.motors, 0.3, 6).mechPowerPerMotor;
+    expect(slow / hoverP).toBeLessThan(1);
+    expect(slow / hoverP).toBeGreaterThan(0.75);
+    // Best range sits below top speed, and costs about hover power (paper: P_r/P_h ≈ 1.09).
+    expect(r.range!.speed).toBeLessThan(0.9 * r.maxSpeed);
+    expect(r.range!.time / r.hoverTime).toBeGreaterThan(0.75);
+    expect(r.range!.time / r.hoverTime).toBeLessThan(1.15);
+  });
+
+  it('climb power includes the work against gravity', () => {
+    const dr = buildDrive(five);
+    const r = run(five);
+    const w = (r.auw / 1000) * 9.80665;
+    const hover = opInFlight(dr, r.auw / dr.motors, 0, 0).mechPowerPerMotor * dr.motors;
+    const climb = opInFlight(dr, r.auw / dr.motors, 10, 0).mechPowerPerMotor * dr.motors;
+    // Momentum theory: extra power lies between W·Vc/2 (slow climb) and W·Vc (fast climb).
+    expect(climb - hover).toBeGreaterThan((w * 10) / 2);
+    expect(climb - hover).toBeLessThan(w * 10);
   });
 });
 

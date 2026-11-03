@@ -28,24 +28,26 @@ export interface Drive {
 }
 
 const TWO_PI = 2 * Math.PI;
+/** 60 / 2π: converts Kv in rpm/V to Kt in N·m/A (Kt = 60 / (2π·Kv)). */
+export const RPM_PER_RAD_S = 60 / TWO_PI;
 
 /**
  * Steady-state operating point at a given shaft speed.
  * Propeller: T = Ct·ρ·n²·D⁴, P = Cp·ρ·n³·D⁵ (n in rev/s, D in m).
- * Motor: I = I0 + Q·Kv/9.5488, V_m = RPM/Kv + I·Rm.
+ * Motor (Drela first-order model): I = I0 + Q·Kv·2π/60, V_m = RPM/Kv + I·Rm.
  * ESC (averaged PWM, throttle τ): τ·V_bat = V_m + I·R_esc, I_bat = N·τ·I + I_acc.
  * Battery: V_bat = V_oc − I_bat·R_bat.
  * Solving the last three for τ gives a quadratic. Throttle may exceed 1 for unreachable speeds.
  */
-export function opAtRpm(dr: Drive, rpm: number): OperatingPoint {
+export function opAtRpm(dr: Drive, rpm: number, shaftPower?: number): OperatingPoint {
   const n = rpm / 60;
   const n2 = n * n;
   const d4 = dr.d ** 4;
   const thrustN = dr.ct * dr.rho * n2 * d4;
-  const mechPower = dr.cp * dr.rho * n2 * n * d4 * dr.d;
+  const mechPower = shaftPower ?? dr.cp * dr.rho * n2 * n * d4 * dr.d;
   const torque = rpm > 0 ? mechPower / (TWO_PI * n) : 0;
   const i0 = rpm > 0 ? dr.i0 * Math.sqrt(rpm / (dr.kv * dr.v0)) : 0;
-  const current = i0 + (torque * dr.kv) / 9.5488;
+  const current = i0 + (torque * dr.kv) / RPM_PER_RAD_S;
   const motorVoltage = rpm / dr.kv + current * dr.rm;
   const vNeed = motorVoltage + current * dr.resc;
 
@@ -108,9 +110,52 @@ export function maxPoint(dr: Drive): OperatingPoint {
 
 /** Operating point producing the given thrust per motor (g). Throttle > 1 means unreachable. */
 export function opAtThrust(dr: Drive, thrustPerMotorG: number): OperatingPoint {
+  return opAtRpm(dr, rpmForThrust(dr, (thrustPerMotorG / 1000) * G));
+}
+
+/** Rpm at which the static prop map gives the requested thrust per motor (N). */
+function rpmForThrust(dr: Drive, thrustN: number): number {
+  return Math.sqrt(thrustN / (dr.ct * dr.rho * dr.d ** 4)) * 60;
+}
+
+/**
+ * Induced velocity (m/s) of a rotor in oblique flow, from Glauert's momentum theory:
+ * v_i = v_h² / √(V_p² + (V_n + v_i)²), with V_n the free-stream component through the disk
+ * (positive for climb or a forward-tilted disk) and V_p the component in the disk plane.
+ * Reduces to the hover value v_h for V = 0 and to the axial-climb solution for V_p = 0.
+ * Leishman, Principles of Helicopter Aerodynamics, 2nd ed., §2.13–2.14 and §5.4.
+ */
+export function inducedVelocity(vh: number, vNormal: number, vPlane: number): number {
+  if (vh <= 0) return 0;
+  let vi = vh;
+  for (let k = 0; k < 60; k++) {
+    const next = (vh * vh) / Math.sqrt(vPlane * vPlane + (vNormal + vi) ** 2);
+    if (Math.abs(next - vi) < 1e-9) return next;
+    vi = 0.5 * (vi + next);
+  }
+  return vi;
+}
+
+/**
+ * Operating point of one rotor delivering thrust T (g, along the shaft) while the vehicle moves
+ * through the air. The static prop map gives rpm and hover shaft power P_s; momentum theory
+ * splits P_s into ideal induced power T·v_h and the rest (profile drag and induced losses).
+ * In flight the ideal induced term becomes T·(v_i + V_n), which includes the climb or parasite
+ * work, and the profile part grows by (1 + 4.65 μ²) with advance ratio μ = V_p / (Ω R).
+ * Leishman §5.4 (forward-flight power), Bauersfeld & Scaramuzza 2022 (multicopters).
+ */
+export function opInFlight(dr: Drive, thrustPerMotorG: number, vNormal: number, vPlane: number): OperatingPoint {
   const thrustN = (thrustPerMotorG / 1000) * G;
-  const n = Math.sqrt(thrustN / (dr.ct * dr.rho * dr.d ** 4));
-  return opAtRpm(dr, n * 60);
+  const rpm = rpmForThrust(dr, thrustN);
+  const n = rpm / 60;
+  const staticPower = dr.cp * dr.rho * n ** 3 * dr.d ** 5;
+  const area = (Math.PI * dr.d * dr.d) / 4;
+  const vh = Math.sqrt(thrustN / (2 * dr.rho * area));
+  const rest = Math.max(0, staticPower - thrustN * vh);
+  const mu = n > 0 ? vPlane / (Math.PI * dr.d * n) : 0;
+  const vi = inducedVelocity(vh, vNormal, vPlane);
+  const power = rest * (1 + 4.65 * mu * mu) + thrustN * (vi + vNormal);
+  return opAtRpm(dr, rpm, Math.max(power, 0));
 }
 
 export function flightMinutes(dr: Drive, batteryCurrent: number): number {
