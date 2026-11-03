@@ -3,6 +3,7 @@ import { batteryWeight } from '../engine/simulate';
 import type { Config, Results, Severity } from '../engine/types';
 import { fmt, fmtNum, type UnitSystem } from '../lib/units';
 import { useUnits } from './context';
+import { wheelbaseMm } from '../lib/frame';
 
 const SIZE = 340;
 const C = SIZE / 2;
@@ -22,7 +23,7 @@ export function sketchGeometry(c: Config) {
   const arms = coax ? 4 : LAYOUTS[c.frame.layout].motors;
   const frameR = (c.frame.maxPropIn * IN) / 2;
   // Arm length where two neighbouring props of the frame's maximum size just clear each other.
-  const arm = Math.max((frameR * 1.12) / Math.sin(Math.PI / arms), frameR * 1.25);
+  const arm = wheelbaseMm(c.frame.maxPropIn, c.frame.layout) / 2;
   const propR = (c.prop.diameter * IN) / 2;
   const motorD = 8 * Math.pow(c.motor.weight, 0.38); // bell diameter: 1404 ≈ 18 mm, 2207 ≈ 30 mm, U10 ≈ 90 mm
   // Battery as a box of LiPo/Li-ion density ~2 g/cm³ with 3 : 1.6 : 1 proportions.

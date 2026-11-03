@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from 'react';
 import { fromS, rewoundMotor } from '../engine/optimizer';
 import type { Chemistry, Config, Layout } from '../engine/types';
+import { frameClass, maxPropForWheelbase, wheelbaseMm } from '../lib/frame';
 import { fmt } from '../lib/units';
 import { applyPart, type AnyPart } from './applyPart';
 import { ComponentPicker } from './ComponentPicker';
@@ -71,7 +72,11 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
         </div>
       </Section>
 
-      <Section icon="frame" title="Frame & payload" summary={`${LAYOUTS[c.frame.layout].label} · ${fmt(system, 'mass', c.frame.weight + c.frame.payload)}`}>
+      <Section
+        icon="frame"
+        title="Frame & payload"
+        summary={`${frameClass(c.frame.maxPropIn, c.frame.layout)} · ${Math.round(wheelbaseMm(c.frame.maxPropIn, c.frame.layout))} mm · ${fmt(system, 'mass', c.frame.weight + c.frame.payload)}`}
+      >
         <ComponentPicker
           items={library.frame}
           detail={frameDetail}
@@ -89,6 +94,13 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
             onChange={(v) => up('frame', { layout: v }, false)}
           />
           <NumberField label="Max prop size" unitLabel="in" value={c.frame.maxPropIn} onChange={(v) => up('frame', { maxPropIn: v ?? 5 }, false)} step={0.5} />
+          <NumberField
+            label="Wheelbase"
+            unitLabel="mm"
+            value={Math.round(wheelbaseMm(c.frame.maxPropIn, c.frame.layout))}
+            onChange={(v) => v && up('frame', { maxPropIn: +maxPropForWheelbase(v, c.frame.layout).toFixed(1) }, false)}
+            step={10}
+          />
           <NumberField label="Frame + electronics" quantity="mass" value={c.frame.weight} onChange={(v) => up('frame', { weight: v ?? 0 }, false)} step={10} />
           <NumberField label="Payload" quantity="mass" value={c.frame.payload} onChange={(v) => up('frame', { payload: v ?? 0 }, false)} step={10} slider min={0} max={Math.max(2000, Math.ceil(c.frame.payload / 500) * 500)} />
           <NumberField label="Accessory current" unitLabel="A" value={c.frame.accessoryCurrent} onChange={(v) => up('frame', { accessoryCurrent: v ?? 0 }, false)} step={0.1} />

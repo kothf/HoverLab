@@ -6,6 +6,7 @@ import { fuzzyFilter } from '../lib/fuzzy';
 import { unit } from '../lib/units';
 import { HELP } from '../ui/help';
 import { sketchGeometry } from '../ui/DroneSketch';
+import { maxPropForWheelbase, wheelbaseMm } from '../lib/frame';
 import { readFileSync } from 'node:fs';
 import { DEFAULT_TARGETS, matchKv, optimize } from './optimizer';
 import { airDensity, estimateMotor, estimatePropCp, estimatePropCt, pressureAt, speedOfSound } from './physics';
@@ -280,6 +281,16 @@ describe('drone sketch geometry', () => {
     const bigFrame = sketchGeometry({ ...five, frame: { ...five.frame, maxPropIn: 7 } });
     expect(bigFrame.wheelbase).toBeGreaterThan(base.wheelbase * 1.3);
     expect(sketchGeometry({ ...five, motor: { ...five.motor, weight: 150 } }).motorD).toBeGreaterThan(base.motorD);
+  });
+});
+
+describe('frame size', () => {
+  it('wheelbase matches common frame classes and round-trips to max prop size', () => {
+    expect(wheelbaseMm(5.1, 'quadX')).toBeGreaterThan(195);
+    expect(wheelbaseMm(5.1, 'quadX')).toBeLessThan(240);
+    expect(wheelbaseMm(10, 'quadX')).toBeGreaterThan(380);
+    expect(wheelbaseMm(10, 'quadX')).toBeLessThan(470);
+    for (const l of ['quadX', 'hexa', 'octo', 'x8coax'] as const) expect(maxPropForWheelbase(wheelbaseMm(7, l), l)).toBeCloseTo(7, 6);
   });
 });
 

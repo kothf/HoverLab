@@ -1,5 +1,6 @@
 import { MAX_TEMP_WINDOW_S } from '../engine/solver';
 import type { Config, OperatingPoint, Results } from '../engine/types';
+import { frameClass, wheelbaseMm } from '../lib/frame';
 import { fmt, fmtNum, fmtThrust } from '../lib/units';
 import { Charts, type Snapshot } from './Charts';
 import { useUnits } from './context';
@@ -163,6 +164,7 @@ function MetricsTable({ config, r }: { config: Config; r: Results }) {
           <dt>Prop Ct / Cp<HelpTip topic="Prop Ct / Cp" /></dt><dd>{fmtNum(r.propCt, 3)} / {fmtNum(r.propCp, 3)}{config.prop.ct == null ? ' (est.)' : ''}</dd>
         </dl>
         <dl>
+          <dt>Frame size<HelpTip topic="Wheelbase" /></dt><dd>{frameClass(config.frame.maxPropIn, config.frame.layout)} · {Math.round(wheelbaseMm(config.frame.maxPropIn, config.frame.layout))} mm</dd>
           <dt>Frame + payload<HelpTip topic="Frame + payload" /></dt><dd>{fmt(system, 'mass', w.frame + w.payload)}</dd>
           <dt>Motors + props<HelpTip topic="Motors + props" /></dt><dd>{fmt(system, 'mass', w.motors + w.props)}</dd>
           <dt>ESCs<HelpTip topic="ESCs" /></dt><dd>{fmt(system, 'mass', w.escs)}</dd>

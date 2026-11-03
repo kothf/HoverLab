@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DEFAULT_TARGETS, type OptimizerMode, type OptimizerResult, type OptimizerTargets } from '../engine/optimizer';
 import { CHEMISTRIES } from '../engine/physics';
 import type { Chemistry, Config } from '../engine/types';
+import { frameClass, maxPropForWheelbase, wheelbaseMm } from '../lib/frame';
 import { fmt, fmtNum, fmtThrust } from '../lib/units';
 import { optEngine } from '../worker/engineClient';
 import { useUnits } from './context';
@@ -69,6 +70,13 @@ export function OptimizerPanel({ config, onApply }: Props) {
         <NumberField label="Target endurance" unitLabel="min" value={t.flightTime} onChange={(v) => set({ flightTime: v ?? 0 })} step={1} />
         <NumberField label="Frame + electronics" quantity="mass" value={t.frameWeight} onChange={(v) => set({ frameWeight: v ?? 0 })} step={10} />
         <NumberField label="Max prop size" unitLabel="in" value={t.maxPropIn} onChange={(v) => set({ maxPropIn: v ?? 5 })} step={0.5} />
+        <NumberField
+          label="Wheelbase"
+          unitLabel="mm"
+          value={Math.round(wheelbaseMm(t.maxPropIn, t.layout))}
+          onChange={(v) => v && set({ maxPropIn: +maxPropForWheelbase(v, t.layout).toFixed(1) })}
+          step={10}
+        />
         <NumberField label="Min thrust/weight" unitLabel=": 1" value={t.minThrustRatio} onChange={(v) => set({ minThrustRatio: v ?? 2 })} step={0.1} />
         <NumberField label="Max hover throttle" unitLabel="%" value={t.maxHoverThrottle * 100} onChange={(v) => set({ maxHoverThrottle: (v ?? 60) / 100 })} step={5} />
         <NumberField label="Min cells" unitLabel="S" integer value={t.minCells} onChange={(v) => set({ minCells: v ?? 1 })} step={1} min={1} max={24} />
@@ -96,6 +104,9 @@ export function OptimizerPanel({ config, onApply }: Props) {
                 <button className="btn small primary" onClick={() => onApply(c.config)}>Apply</button>
               </div>
               <div className="opt-metrics">
+                <span>
+                  Frame {frameClass(c.config.frame.maxPropIn, c.config.frame.layout)} · {Math.round(wheelbaseMm(c.config.frame.maxPropIn, c.config.frame.layout))} mm
+                </span>
                 <span>Motor {c.config.motor.weight} g · {c.config.motor.kv}KV</span>
                 <span className={c.meetsFlightTime ? 'ok-text' : 'warn-text'}>Hover {fmtNum(c.hoverTime, 1)} min</span>
                 <span>T/W {fmtNum(c.thrustToWeight, 2)}</span>

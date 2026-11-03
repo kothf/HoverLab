@@ -11,6 +11,8 @@ export const HELP: Record<string, string> = {
   // Frame
   'Rotor configuration':
     'Number and arrangement of motors. Quad X and Quad + fly the same in this model. X8 coaxial has 8 motors on 4 arms; lower props work in the upper wake, modelled as ~10 % lower thrust coefficient on average.',
+  Wheelbase:
+    'Frame size: diagonal distance between motor centres in mm, the number frames are sold by (5" ≈ 210–230 mm, 450 class = 450 mm). Linked to max prop size: changing one updates the other, assuming neighbouring props just clear each other.',
   'Max prop size':
     'Largest propeller the frame can swing without the blades hitting each other or the frame. Used for the "prop too large" warning and as the optimizer limit.',
   'Frame + electronics':
