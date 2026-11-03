@@ -79,6 +79,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
       >
         <ComponentPicker
           items={library.frame}
+          current={c.frame.name}
           detail={frameDetail}
           placeholder="Search frames…"
           onPick={pick('frame')}
@@ -91,17 +92,17 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
             label="Rotor configuration"
             value={c.frame.layout}
             options={(Object.keys(LAYOUTS) as Layout[]).map((k) => ({ value: k, label: LAYOUTS[k].label }))}
-            onChange={(v) => up('frame', { layout: v }, false)}
+            onChange={(v) => up('frame', { layout: v })}
           />
-          <NumberField label="Max prop size" unitLabel="in" value={c.frame.maxPropIn} onChange={(v) => up('frame', { maxPropIn: v ?? 5 }, false)} step={0.5} />
+          <NumberField label="Max prop size" unitLabel="in" value={c.frame.maxPropIn} onChange={(v) => up('frame', { maxPropIn: v ?? 5 })} step={0.5} />
           <NumberField
             label="Wheelbase"
             unitLabel="mm"
             value={Math.round(wheelbaseMm(c.frame.maxPropIn, c.frame.layout))}
-            onChange={(v) => v && up('frame', { maxPropIn: +maxPropForWheelbase(v, c.frame.layout).toFixed(1) }, false)}
+            onChange={(v) => v && up('frame', { maxPropIn: +maxPropForWheelbase(v, c.frame.layout).toFixed(1) })}
             step={10}
           />
-          <NumberField label="Frame + electronics" quantity="mass" value={c.frame.weight} onChange={(v) => up('frame', { weight: v ?? 0 }, false)} step={10} />
+          <NumberField label="Frame + electronics" quantity="mass" value={c.frame.weight} onChange={(v) => up('frame', { weight: v ?? 0 })} step={10} />
           <NumberField label="Payload" quantity="mass" value={c.frame.payload} onChange={(v) => up('frame', { payload: v ?? 0 }, false)} step={10} slider min={0} max={Math.max(2000, Math.ceil(c.frame.payload / 500) * 500)} />
           <NumberField label="Accessory current" unitLabel="A" value={c.frame.accessoryCurrent} onChange={(v) => up('frame', { accessoryCurrent: v ?? 0 }, false)} step={0.1} />
           <NumberField
@@ -109,7 +110,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
             unitLabel="m²"
             value={c.frame.dragArea}
             auto={estimateDragArea(auw ?? c.frame.weight * 2)}
-            onChange={(v) => up('frame', { dragArea: v }, false)}
+            onChange={(v) => up('frame', { dragArea: v })}
             step={0.001}
           />
         </div>
