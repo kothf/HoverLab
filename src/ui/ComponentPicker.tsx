@@ -1,0 +1,80 @@
+import { useMemo, useRef, useState } from 'react';
+import { fuzzyFilter } from '../lib/fuzzy';
+
+interface Props<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }> {
+  items: T[];
+  current?: string;
+  detail: (item: T) => string;
+  onPick: (item: T) => void;
+  placeholder: string;
+}
+
+/** Fuzzy-search dropdown over library parts (FRS 2.2.3), e.g. "tmotor 2207" or "gem 5". */
+export function ComponentPicker<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }>({ items, current, detail, onPick, placeholder }: Props<T>) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const results = useMemo(() => fuzzyFilter(items, query, (i) => `${i.brand} ${i.model} ${detail(i)}`, 40), [items, query, detail]);
+
+  const pick = (it: T) => {
+    onPick(it);
+    setQuery('');
+    setOpen(false);
+  };
+
+  return (
+    <div
+      className="picker"
+      ref={ref}
+      onBlur={(e) => {
+        if (!ref.current?.contains(e.relatedTarget as Node)) setOpen(false);
+      }}
+    >
+      <input
+        type="search"
+        value={query}
+        placeholder={current ? `${current} — search to replace` : placeholder}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setActive(0);
+          setOpen(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') setActive((a) => Math.min(a + 1, results.length - 1));
+          else if (e.key === 'ArrowUp') setActive((a) => Math.max(a - 1, 0));
+          else if (e.key === 'Enter' && results[active]) pick(results[active]);
+          else if (e.key === 'Escape') setOpen(false);
+          else return;
+          e.preventDefault();
+        }}
+        aria-label={placeholder}
+      />
+      {open && (
+        <ul className="picker-list" role="listbox">
+          {results.length === 0 && <li className="picker-empty">No matching parts</li>}
+          {results.map((it, i) => (
+            <li key={it.id}>
+              <button
+                type="button"
+                className={i === active ? 'active' : ''}
+                onMouseEnter={() => setActive(i)}
+                onClick={() => pick(it)}
+              >
+                <span className="picker-name">
+                  {it.brand} {it.model}
+                  {it.custom && <span className="tag">custom</span>}
+                </span>
+                <span className="picker-detail">
+                  {detail(it)}
+                  {it.note && <em> · {it.note}</em>}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
