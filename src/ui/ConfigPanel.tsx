@@ -52,20 +52,21 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
 
   return (
     <div className="config">
-      <Section title="Atmosphere & environment" summary={`ρ = ${rho.toFixed(3)} kg/m³`}>
+      <Section icon="env" title="Atmosphere & environment" summary={`ρ = ${rho.toFixed(3)} kg/m³`}>
         <div className="grid2">
           <NumberField label="Field elevation" quantity="altitude" value={c.env.elevation} onChange={(v) => up('env', { elevation: v ?? 0 })} step={50} min={-500} max={8000} />
           <NumberField label="Air temperature" quantity="temp" value={c.env.temperature} onChange={(v) => up('env', { temperature: v ?? 15 })} step={1} />
         </div>
       </Section>
 
-      <Section title="Frame & payload" summary={`${LAYOUTS[c.frame.layout].label} · ${fmt(system, 'mass', c.frame.weight + c.frame.payload)}`}>
+      <Section icon="frame" title="Frame & payload" summary={`${LAYOUTS[c.frame.layout].label} · ${fmt(system, 'mass', c.frame.weight + c.frame.payload)}`}>
         <ComponentPicker
           items={library.frame}
           detail={frameDetail}
           placeholder="Search frames…"
           onPick={pick('frame')}
           onDefine={define('frame')}
+          icon="frame"
           kindLabel="frame"
         />
         <div className="grid2">
@@ -90,7 +91,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
         </div>
       </Section>
 
-      <Section title="Battery" summary={`${chem.label} ${b.s}S${b.p}P ${b.capacity * b.p} mAh · ${((b.s * chem.nominal * b.capacity * b.p) / 1000).toFixed(0)} Wh`}>
+      <Section icon="battery" title="Battery" summary={`${chem.label} ${b.s}S${b.p}P ${b.capacity * b.p} mAh · ${((b.s * chem.nominal * b.capacity * b.p) / 1000).toFixed(0)} Wh`}>
         <ComponentPicker
           items={library.battery}
           current={b.name}
@@ -98,6 +99,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
           placeholder="Search batteries or cells…"
           onPick={pick('battery')}
           onDefine={define('battery')}
+          icon="battery"
           kindLabel="battery"
         />
         <div className="grid2">
@@ -120,7 +122,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
         </div>
       </Section>
 
-      <Section title="ESC" summary={`${c.esc.maxCurrent} A cont. / ${c.esc.burstCurrent} A burst`}>
+      <Section icon="esc" title="ESC" summary={`${c.esc.maxCurrent} A cont. / ${c.esc.burstCurrent} A burst`}>
         <ComponentPicker
           items={library.esc}
           current={c.esc.name}
@@ -128,6 +130,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
           placeholder="Search ESCs…"
           onPick={pick('esc')}
           onDefine={define('esc')}
+          icon="esc"
           kindLabel="ESC"
         />
         <div className="grid2">
@@ -138,7 +141,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
         </div>
       </Section>
 
-      <Section title="Motor" summary={`${c.motor.name ?? ''} ${c.motor.kv}KV`}>
+      <Section icon="motor" title="Motor" summary={`${c.motor.name ?? ''} ${c.motor.kv}KV`}>
         <ComponentPicker
           items={library.motor}
           current={c.motor.name}
@@ -146,6 +149,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
           placeholder="Search motors, e.g. T-Motor 2207…"
           onPick={pick('motor')}
           onDefine={define('motor')}
+          icon="motor"
           kindLabel="motor"
         />
         <div className="grid2">
@@ -159,7 +163,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
         </div>
       </Section>
 
-      <Section title="Propeller" summary={`${c.prop.diameter}x${c.prop.pitch}x${c.prop.blades}`}>
+      <Section icon="prop" title="Propeller" summary={`${c.prop.diameter}x${c.prop.pitch}x${c.prop.blades}`}>
         <ComponentPicker
           items={library.prop}
           current={c.prop.name}
@@ -167,6 +171,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
           placeholder="Search props, e.g. gemfan 5…"
           onPick={pick('prop')}
           onDefine={define('prop')}
+          icon="prop"
           kindLabel="propeller"
         />
         <div className="grid2">

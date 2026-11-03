@@ -3,6 +3,7 @@ import { fmtNum, unit, type Quantity } from '../lib/units';
 import { useUnits } from './context';
 import { HELP } from './help';
 import { HelpTip } from './HelpTip';
+import { Icon, type IconName } from './Icons';
 
 interface NumberFieldProps {
   label: string;
@@ -123,11 +124,14 @@ export function SelectField<T extends string>({ label, value, options, onChange 
   );
 }
 
-export function Section({ title, summary, children, defaultOpen = true }: { title: string; summary?: string; children: ReactNode; defaultOpen?: boolean }) {
+export function Section({ title, summary, children, icon, defaultOpen = true }: { title: string; summary?: string; children: ReactNode; icon?: IconName; defaultOpen?: boolean }) {
   return (
     <details className="section" open={defaultOpen}>
       <summary>
-        <span className="section-title">{title}</span>
+        <span className="section-title">
+          {icon && <Icon name={icon} className="section-icon" />}
+          {title}
+        </span>
         {summary && <span className="section-summary">{summary}</span>}
       </summary>
       <div className="section-body">{children}</div>

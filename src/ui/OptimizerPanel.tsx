@@ -49,7 +49,7 @@ export function OptimizerPanel({ config, onApply }: Props) {
   };
 
   return (
-    <Section title="Inverse design optimizer" summary="auto-select Kv, prop, cells, battery" defaultOpen={false}>
+    <Section icon="optimizer" title="Inverse design optimizer" summary="auto-select Kv, prop, cells, battery" defaultOpen={false}>
       <div className="grid2">
         <SelectField<OptimizerMode>
           label="Objective"

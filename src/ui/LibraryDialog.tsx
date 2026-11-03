@@ -6,6 +6,7 @@ import { download } from '../lib/exporters';
 import { fuzzyFilter } from '../lib/fuzzy';
 import { parseLibraryJson } from '../lib/storage';
 import type { AnyPart } from './applyPart';
+import { Icon } from './Icons';
 
 interface Props {
   library: Library; // merged (custom first)
@@ -143,7 +144,7 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
         <div className="tabs">
           {KINDS.map((k) => (
             <button key={k.key} className={kind === k.key ? 'active' : ''} onClick={() => { setKind(k.key); setDraft(null); }}>
-              {k.label} <span className="muted">({library[k.key].length})</span>
+              <Icon name={k.key} size={16} /> {k.label} <span className="muted">({library[k.key].length})</span>
             </button>
           ))}
         </div>
