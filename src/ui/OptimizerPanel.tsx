@@ -67,7 +67,7 @@ export function OptimizerPanel({ config, onApply }: Props) {
           onChange={(v) => set({ chemistry: v })}
         />
         <NumberField label="Target payload" quantity="mass" value={t.payload} onChange={(v) => set({ payload: v ?? 0 })} step={50} />
-        <NumberField label="Target endurance" unitLabel="min" value={t.flightTime} onChange={(v) => set({ flightTime: v ?? 0 })} step={1} hint="Payload mode requires at least this hover time" />
+        <NumberField label="Target endurance" unitLabel="min" value={t.flightTime} onChange={(v) => set({ flightTime: v ?? 0 })} step={1} />
         <NumberField label="Frame + electronics" quantity="mass" value={t.frameWeight} onChange={(v) => set({ frameWeight: v ?? 0 })} step={10} />
         <NumberField label="Max prop size" unitLabel="in" value={t.maxPropIn} onChange={(v) => set({ maxPropIn: v ?? 5 })} step={0.5} />
         <NumberField label="Min thrust/weight" unitLabel=": 1" value={t.minThrustRatio} onChange={(v) => set({ minThrustRatio: v ?? 2 })} step={0.1} />

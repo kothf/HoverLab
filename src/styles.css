@@ -261,3 +261,21 @@ table.compact th, table.compact td { padding: 4px 6px; font-size: 13px; }
   .card { box-shadow: none; break-inside: avoid; }
   body { font-size: 12px; }
 }
+
+/* Help tips */
+.field-label { display: inline-flex; align-items: center; gap: 4px; }
+.field-label label { cursor: pointer; }
+.help { display: inline-flex; vertical-align: middle; margin-left: 4px; }
+.help-btn {
+  width: 15px; height: 15px; padding: 0; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--panel-2); color: var(--muted); font-size: 10px; font-weight: 700; line-height: 1;
+  cursor: help; display: inline-flex; align-items: center; justify-content: center;
+}
+.help-btn:hover, .help-btn:focus-visible, .help-btn[aria-expanded='true'] { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); outline: none; }
+.help-bubble {
+  position: fixed; z-index: 60; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--panel); color: var(--text); box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  font-size: 12.5px; line-height: 1.45; font-weight: 400; text-transform: none; letter-spacing: 0; text-align: left; white-space: normal;
+}
+th .help, dt .help { margin-left: 5px; }
+@media print { .help { display: none; } }

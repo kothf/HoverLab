@@ -4,6 +4,8 @@ import { PRESETS } from '../data/presets';
 import { decodeConfig, encodeConfig } from '../lib/share';
 import { fuzzyFilter } from '../lib/fuzzy';
 import { unit } from '../lib/units';
+import { HELP } from '../ui/help';
+import { readFileSync } from 'node:fs';
 import { DEFAULT_TARGETS, matchKv, optimize } from './optimizer';
 import { airDensity } from './physics';
 import { buildDrive, simulate, validateConfig } from './simulate';
@@ -177,6 +179,16 @@ describe('component library', () => {
     for (const mo of BUILTIN.motor) {
       const out = simulate({ ...five, motor: { ...five.motor, ...mo } });
       expect(out.ok, mo.id).toBe(true);
+    }
+  });
+});
+
+describe('help text', () => {
+  it('every input field label has help', () => {
+    for (const file of ['src/ui/ConfigPanel.tsx', 'src/ui/OptimizerPanel.tsx']) {
+      const labels = [...readFileSync(file, 'utf8').matchAll(/label="([^"]+)"/g)].map((m) => m[1]);
+      expect(labels.length).toBeGreaterThan(5);
+      for (const l of labels) expect(HELP[l], `${file}: ${l}`).toBeTruthy();
     }
   });
 });
