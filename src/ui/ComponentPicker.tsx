@@ -7,10 +7,13 @@ interface Props<T extends { id: string; brand: string; model: string; custom?: b
   detail: (item: T) => string;
   onPick: (item: T) => void;
   placeholder: string;
+  /** Opens the custom-part editor; offered at the bottom of every result list. */
+  onDefine?: (query: string) => void;
+  kindLabel?: string;
 }
 
 /** Fuzzy-search dropdown over library parts (FRS 2.2.3), e.g. "tmotor 2207" or "gem 5". */
-export function ComponentPicker<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }>({ items, current, detail, onPick, placeholder }: Props<T>) {
+export function ComponentPicker<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }>({ items, current, detail, onPick, placeholder, onDefine, kindLabel = 'part' }: Props<T>) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -53,7 +56,7 @@ export function ComponentPicker<T extends { id: string; brand: string; model: st
       />
       {open && (
         <ul className="picker-list" role="listbox">
-          {results.length === 0 && <li className="picker-empty">No matching parts</li>}
+          {results.length === 0 && <li className="picker-empty">No matching {kindLabel}s in the library.</li>}
           {results.map((it, i) => (
             <li key={it.id}>
               <button
@@ -73,6 +76,21 @@ export function ComponentPicker<T extends { id: string; brand: string; model: st
               </button>
             </li>
           ))}
+          {onDefine && (
+            <li className="picker-define">
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setOpen(false);
+                  onDefine(query);
+                  setQuery('');
+                }}
+              >
+                ＋ Can't find it? Define your own {kindLabel}
+              </button>
+            </li>
+          )}
         </ul>
       )}
     </div>

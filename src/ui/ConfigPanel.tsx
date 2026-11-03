@@ -1,4 +1,4 @@
-import type { BatteryItem, EscItem, FrameItem, Library, MotorItem, PropItem } from '../data/components';
+import type { BatteryItem, ComponentKind, EscItem, FrameItem, Library, MotorItem, PropItem } from '../data/components';
 import {
   CHEMISTRIES,
   LAYOUTS,
@@ -12,6 +12,7 @@ import {
 } from '../engine/physics';
 import type { Chemistry, Config, Layout } from '../engine/types';
 import { fmt } from '../lib/units';
+import { applyPart, type AnyPart } from './applyPart';
 import { ComponentPicker } from './ComponentPicker';
 import { useUnits } from './context';
 import { NumberField, Section, SelectField } from './fields';
@@ -21,6 +22,7 @@ interface Props {
   library: Library;
   auw: number | null;
   onChange: (c: Config) => void;
+  onDefine: (kind: ComponentKind, query: string) => void;
 }
 
 const edited = (name?: string) => (name && !name.endsWith(' (edited)') ? `${name} (edited)` : name);
@@ -32,13 +34,16 @@ const batteryDetail = (b: BatteryItem) =>
 const escDetail = (e: EscItem) => `${e.maxCurrent} A · ${e.format}`;
 const frameDetail = (f: FrameItem) => `${LAYOUTS[f.layout].label} · ${f.weight} g · ≤${f.maxPropIn}"`;
 
-export function ConfigPanel({ config: c, library, auw, onChange }: Props) {
+export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Props) {
   const system = useUnits();
   const up = <K extends 'env' | 'frame' | 'battery' | 'esc' | 'motor' | 'prop'>(k: K, patch: Partial<Config[K]>, markEdited = true) => {
     const next = { ...c[k], ...patch } as Config[K];
     if (markEdited && 'name' in next && !('name' in patch)) (next as { name?: string }).name = edited((next as { name?: string }).name);
     onChange({ ...c, [k]: next });
   };
+
+  const pick = (kind: ComponentKind) => (part: AnyPart) => onChange(applyPart(c, kind, part));
+  const define = (kind: ComponentKind) => (query: string) => onDefine(kind, query);
 
   const rho = airDensity(c.env.elevation, c.env.temperature);
   const b = c.battery;
@@ -59,7 +64,9 @@ export function ConfigPanel({ config: c, library, auw, onChange }: Props) {
           items={library.frame}
           detail={frameDetail}
           placeholder="Search frames…"
-          onPick={(f) => up('frame', { layout: f.layout, weight: f.weight, maxPropIn: f.maxPropIn, dragArea: f.dragArea }, false)}
+          onPick={pick('frame')}
+          onDefine={define('frame')}
+          kindLabel="frame"
         />
         <div className="grid2">
           <SelectField<Layout>
@@ -89,15 +96,9 @@ export function ConfigPanel({ config: c, library, auw, onChange }: Props) {
           current={b.name}
           detail={batteryDetail}
           placeholder="Search batteries or cells…"
-          onPick={(it) =>
-            up(
-              'battery',
-              it.form === 'pack'
-                ? { name: `${it.brand} ${it.model}`, chemistry: it.chemistry, s: it.s, p: 1, capacity: it.capacity, cRating: it.cRating, cBurst: it.cBurst, resistance: it.resistance, weight: it.weight, cellWeight: null }
-                : { name: `${it.brand} ${it.model}`, chemistry: it.chemistry, capacity: it.capacity, cRating: it.cRating, cBurst: it.cBurst, resistance: it.resistance, weight: null, cellWeight: it.weight },
-              false,
-            )
-          }
+          onPick={pick('battery')}
+          onDefine={define('battery')}
+          kindLabel="battery"
         />
         <div className="grid2">
           <SelectField<Chemistry>
@@ -125,7 +126,9 @@ export function ConfigPanel({ config: c, library, auw, onChange }: Props) {
           current={c.esc.name}
           detail={escDetail}
           placeholder="Search ESCs…"
-          onPick={(e) => up('esc', { name: `${e.brand} ${e.model}`, maxCurrent: e.maxCurrent, burstCurrent: e.burstCurrent, resistance: e.resistance, weight: e.weight }, false)}
+          onPick={pick('esc')}
+          onDefine={define('esc')}
+          kindLabel="ESC"
         />
         <div className="grid2">
           <NumberField label="Continuous current" unitLabel="A" value={c.esc.maxCurrent} onChange={(v) => up('esc', { maxCurrent: v ?? 1 })} step={5} />
@@ -141,7 +144,9 @@ export function ConfigPanel({ config: c, library, auw, onChange }: Props) {
           current={c.motor.name}
           detail={motorDetail}
           placeholder="Search motors, e.g. T-Motor 2207…"
-          onPick={(m) => up('motor', { name: `${m.brand} ${m.model}`, kv: m.kv, i0: m.i0, v0: m.v0, rm: m.rm, maxPower: m.maxPower, maxCurrent: m.maxCurrent, weight: m.weight }, false)}
+          onPick={pick('motor')}
+          onDefine={define('motor')}
+          kindLabel="motor"
         />
         <div className="grid2">
           <NumberField label="Motor Kv" unitLabel="RPM/V" value={c.motor.kv} onChange={(v) => up('motor', { kv: v ?? 1 })} step={50} slider min={50} max={5000} />
@@ -160,7 +165,9 @@ export function ConfigPanel({ config: c, library, auw, onChange }: Props) {
           current={c.prop.name}
           detail={propDetail}
           placeholder="Search props, e.g. gemfan 5…"
-          onPick={(p) => up('prop', { name: `${p.brand} ${p.model}`, diameter: p.diameter, pitch: p.pitch, blades: p.blades, ct: p.ct, cp: p.cp, weight: p.weight }, false)}
+          onPick={pick('prop')}
+          onDefine={define('prop')}
+          kindLabel="propeller"
         />
         <div className="grid2">
           <NumberField label="Diameter" unitLabel="in" value={c.prop.diameter} onChange={(v) => up('prop', { diameter: v ?? 1 })} step={0.5} slider min={2} max={32} />
