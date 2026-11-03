@@ -299,13 +299,16 @@ th .help, dt .help { margin-left: 5px; }
 .sketch-body { fill: var(--panel-2); stroke: var(--border); stroke-width: 2; }
 .sketch-battery { opacity: 0.85; stroke: var(--bg); stroke-width: 1.5; }
 .sketch-payload { fill: var(--series-4); opacity: 0.8; }
-.sketch-label { font: 600 12px Inter, system-ui, sans-serif; fill: var(--bg); }
-.sketch-disc { fill: color-mix(in srgb, var(--accent) 7%, transparent); stroke: color-mix(in srgb, var(--accent) 45%, transparent); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.sketch-disc { fill: color-mix(in srgb, var(--accent) 8%, transparent); stroke: color-mix(in srgb, var(--accent) 55%, transparent); stroke-width: 1.2; }
+.sketch-limit { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.5; }
+.sketch-limit.over { stroke: var(--danger); opacity: 0.9; }
+.sketch-scale line { stroke: var(--muted); stroke-width: 1.5; }
+.sketch-scale text { font: 11px Inter, system-ui, sans-serif; fill: var(--muted); }
+.sketch-legend { font-size: 11px; opacity: 0.8; }
+.sketch svg * { transition: r 0.25s, cx 0.25s, cy 0.25s, x 0.25s, y 0.25s, width 0.25s, height 0.25s, x1 0.25s, y1 0.25s, x2 0.25s, y2 0.25s; }
 .sketch-disc.coax { stroke-dasharray: none; stroke-width: 0.8; }
 .sketch-blade { fill: color-mix(in srgb, var(--text) 30%, transparent); }
 .sketch-motor { stroke: var(--bg); stroke-width: 2; }
-.sketch-dir { fill: none; stroke: var(--muted); stroke-width: 1.2; opacity: 0.6; }
-.sketch-arrowhead { fill: var(--muted); }
 .sketch-front { fill: var(--accent); }
 .sketch-spin { animation: sketch-spin linear infinite; }
 @keyframes sketch-spin { to { transform: rotate(360deg); } }
