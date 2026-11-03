@@ -11,6 +11,7 @@ export interface EnvConfig {
 }
 
 export interface FrameConfig {
+  name?: string;
   layout: Layout;
   weight: number; // bare frame incl. FC/VTX/camera etc, g
   payload: number; // g

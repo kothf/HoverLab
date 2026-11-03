@@ -9,7 +9,7 @@ export function applyPart(c: Config, kind: ComponentKind, part: AnyPart): Config
   switch (kind) {
     case 'frame': {
       const f = part as FrameItem;
-      return { ...c, frame: { ...c.frame, layout: f.layout, weight: f.weight, maxPropIn: f.maxPropIn, dragArea: f.dragArea ?? null } };
+      return { ...c, frame: { ...c.frame, name, layout: f.layout, weight: f.weight, maxPropIn: f.maxPropIn, dragArea: f.dragArea ?? null } };
     }
     case 'battery': {
       const it = part as BatteryItem;
