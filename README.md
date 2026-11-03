@@ -30,3 +30,7 @@ npm run build    # type-check and production build into dist/
 - Optimizer parts are generic: motor resistance and no-load current are scaled from mass and Kv.
 
 Library values are typical figures rounded from public data. Check the datasheet for the exact part before relying on a result.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
