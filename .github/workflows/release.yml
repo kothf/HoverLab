@@ -1,10 +1,11 @@
 name: Release
 
-# Push a tag like v0.1.0 (matching package.json), or press "Run workflow" to release main's
-# package.json version. Publishes a GitHub release with hoverlab-<version>.tar.gz + .sha256,
-# which aerocat.tech pins by version and checksum in its vendor.json.
+# Runs on every push to main: when package.json carries a version that has no tag yet, it tests,
+# tags and publishes hoverlab-<version>.tar.gz + .sha256 and asks aerocat.tech to pick it up.
+# Pushes that keep the version are skipped. A pushed v* tag or "Run workflow" also release.
 on:
   push:
+    branches: [main]
     tags: ['v*.*.*']
   workflow_dispatch:
 
@@ -29,26 +30,35 @@ jobs:
       - name: Tag must match package.json version
         run: |
           pkg="$(node -p "require('./package.json').version")"
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+          if [ "$GITHUB_REF_TYPE" = "branch" ]; then
             tag="v$pkg"
-            if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then echo "::error::Tag $tag already exists"; exit 1; fi
+            if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+              if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then echo "::error::Tag $tag already exists"; exit 1; fi
+              echo "::notice::$tag is already released; bump package.json to release this commit"
+              echo "SKIP=1" >> "$GITHUB_ENV"
+            fi
           else
             tag="$GITHUB_REF_NAME"
           fi
           if [ "${tag#v}" != "$pkg" ]; then echo "::error::Tag $tag does not match package.json $pkg"; exit 1; fi
           echo "TAG=$tag" >> "$GITHUB_ENV"
 
-      - run: npm ci
-      - run: npm test
-      - run: npm run package -- "${TAG#v}"
+      - if: env.SKIP != '1'
+        run: npm ci
+      - if: env.SKIP != '1'
+        run: npm test
+      - if: env.SKIP != '1'
+        run: npm run package -- "${TAG#v}"
 
-      - name: Tag the release (Run workflow)
-        if: github.event_name == 'workflow_dispatch'
+      # A tag pushed with the workflow's own token starts no second run.
+      - name: Tag the release
+        if: env.SKIP != '1' && github.ref_type == 'branch'
         run: |
           git tag "$TAG" "$GITHUB_SHA"
           git push origin "refs/tags/$TAG"
 
       - name: Publish GitHub release
+        if: env.SKIP != '1'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$TAG" release/*.tar.gz release/*.tar.gz.sha256 --title "HoverLab $TAG" --generate-notes --verify-tag
@@ -56,6 +66,7 @@ jobs:
       # Same hook as the other vendored tools: needs a SITE_DISPATCH_TOKEN secret allowed to run
       # workflows in kothf/astro_source-new_theme; without it the site's scheduled update picks it up.
       - name: Ask aerocat.tech to pick up this release
+        if: env.SKIP != '1'
         env:
           SITE_TOKEN: ${{ secrets.SITE_DISPATCH_TOKEN }}
         run: |
