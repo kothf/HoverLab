@@ -11,6 +11,10 @@ Professional multirotor powertrain calculator and inverse design optimizer. It r
 - **Component library**: about 230 motors, props, batteries/cells, ESCs and frames (including AliExpress brands) with fuzzy search. If a part is missing, "Can't find it? Define your own" in every part search opens an editor prefilled from the current build; custom parts are saved in the browser and can be exported or imported as JSON.
 - **Quality of life**: presets, metric/imperial units, dark/light theme, save/load configurations, CSV report, PDF report via print, shareable link that carries the whole configuration in the URL.
 
+## Releases
+
+Every merge to `main` that bumps `package.json`'s version publishes a release automatically (CI requires the bump on pull requests), and the release asks aerocat.tech to install it at /tools/hoverlab/.
+
 ## Development
 
 ```bash

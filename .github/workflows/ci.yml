@@ -15,6 +15,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # Every merge to main releases automatically, so a PR must bump package.json's version.
+      - name: Version bumped
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --depth=1 origin "$GITHUB_BASE_REF"
+          base="$(git show "origin/$GITHUB_BASE_REF:package.json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).version))')"
+          head="$(node -p "require('./package.json').version")"
+          if [ "$base" = "$head" ]; then echo "::error::package.json version $head is unchanged; bump it (npm version patch --no-git-tag-version) so the merge releases"; exit 1; fi
+          echo "Version $base -> $head"
       - run: npm ci
       - run: npm test
       - run: npm run package
