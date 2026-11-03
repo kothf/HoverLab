@@ -104,7 +104,7 @@ export function motorHeatCapacity(weightG: number): number {
  */
 export function estimateMotor(kv: number, weightG: number) {
   const km = 0.0223 * Math.pow(weightG / 32, 0.79);
-  const kt = 9.5488 / kv;
+  const kt = 60 / (2 * Math.PI * kv);
   const rmOhm = (kt / km) ** 2;
   const i0 = 0.06 * Math.pow(weightG, 0.8) * ((kv * 10) / 15000);
   const maxCurrent = Math.sqrt((2 * weightG) / rmOhm);

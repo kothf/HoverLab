@@ -17,6 +17,7 @@ import {
   maxPoint,
   opAtThrottle,
   opAtThrust,
+  opInFlight,
   thermalModel,
   type Drive,
 } from './solver';
@@ -146,36 +147,60 @@ function mixedCurrent(dr: Drive, hover: OperatingPoint, max: OperatingPoint): nu
   return 0.7 * hover.batteryCurrent + 0.3 * mid.batteryCurrent;
 }
 
+/** Climb and forward-flight performance from momentum theory (see opInFlight). */
 function forwardFlight(dr: Drive, auwG: number, cdaFront: number, max: OperatingPoint) {
   const W = (auwG / 1000) * G;
   const cdaTop = cdaFront * 2.5;
-  const Tmax = (max.totalThrust / 1000) * G;
+  // The static prop map overestimates thrust at high inflow; keep kinematic caps on pitch speed.
   const pitchSpeed = (max.rpm / 60) * dr.pitch;
+  const perMotorG = (thrustN: number) => ((thrustN / G) * 1000) / dr.motors;
 
-  const climb = Tmax > W ? Math.min(Math.sqrt((2 * (Tmax - W)) / (dr.rho * cdaTop)), 0.6 * pitchSpeed) : 0;
+  const climbOp = (v: number) => opInFlight(dr, perMotorG(W + 0.5 * dr.rho * v * v * cdaTop), v, 0);
+  const cruise = (v: number) => {
+    let theta = 0;
+    let T = W;
+    for (let k = 0; k < 8; k++) {
+      const cda = cdaFront * Math.cos(theta) + cdaTop * Math.sin(theta);
+      const drag = 0.5 * dr.rho * v * v * cda;
+      T = Math.hypot(W, drag);
+      theta = Math.atan2(drag, W);
+    }
+    // Forward-tilted disk: the free stream crosses it at V·sinθ and runs along it at V·cosθ.
+    return opInFlight(dr, perMotorG(T), v * Math.sin(theta), v * Math.cos(theta));
+  };
+  const ok = (op: OperatingPoint) => op.throttle <= 1;
 
-  let maxSpeed = 0;
-  if (Tmax > W) {
-    const theta = Math.acos(W / Tmax);
-    const cda = cdaFront * Math.cos(theta) + cdaTop * Math.sin(theta);
-    maxSpeed = Math.min(Math.sqrt((2 * W * Math.tan(theta)) / (dr.rho * cda)), 0.85 * pitchSpeed);
-  }
+  /** Largest speed in [0, cap] for which `feasible` holds, scanning up then bisecting. */
+  const limit = (cap: number, feasible: (v: number) => boolean) => {
+    if (cap <= 0 || !feasible(0)) return 0;
+    const steps = 48;
+    let lo = 0;
+    for (let i = 1; i <= steps; i++) {
+      const v = (cap * i) / steps;
+      if (!feasible(v)) {
+        let hi = v;
+        for (let k = 0; k < 30; k++) {
+          const mid = (lo + hi) / 2;
+          if (feasible(mid)) lo = mid;
+          else hi = mid;
+        }
+        return lo;
+      }
+      lo = v;
+    }
+    return cap;
+  };
+
+  const climb = limit(0.6 * pitchSpeed, (v) => ok(climbOp(v)));
+  const maxSpeed = limit(0.85 * pitchSpeed, (v) => ok(cruise(v)));
 
   let range: Results['range'] = null;
   if (maxSpeed > 1) {
-    const steps = 24;
+    const steps = 40;
     for (let i = 1; i <= steps; i++) {
       const v = (maxSpeed * i) / steps;
-      let theta = 0;
-      let T = W;
-      for (let k = 0; k < 5; k++) {
-        const cda = cdaFront * Math.cos(theta) + cdaTop * Math.sin(theta);
-        const drag = 0.5 * dr.rho * v * v * cda;
-        T = Math.hypot(W, drag);
-        theta = Math.atan2(drag, W);
-      }
-      const op = opAtThrust(dr, ((T / G) * 1000) / dr.motors);
-      if (op.throttle > 1) break;
+      const op = cruise(v);
+      if (!ok(op)) break;
       const time = flightMinutes(dr, op.batteryCurrent);
       const distance = (v * time * 60) / 1000;
       if (!range || distance > range.distance) range = { speed: v, distance, time };

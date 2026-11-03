@@ -90,7 +90,7 @@ export const HELP: Record<string, string> = {
   'Hover throttle': 'Throttle needed to hover, with battery current and power. 35–55 % is a healthy range.',
   'Specific thrust': 'Grams of thrust per watt of battery power at hover. Higher means more efficient; 8–12 g/W is good for camera and endurance builds.',
   'Peak power': 'Electrical power at full throttle, with battery current and C-rate.',
-  'Max speed': 'Estimated level top speed from thrust and drag, plus vertical climb rate. Rough estimate: ignores prop unloading at speed.',
+  'Max speed': 'Level top speed and vertical climb rate where full throttle can no longer supply the power that momentum theory asks for (lift, drag and climb work). The static prop map ignores prop unloading at speed, so both are capped below pitch speed.',
   'Best range': 'Longest distance on one battery and the speed that gives it, from a sweep of cruise speeds.',
   'Thrust/Weight': 'Full-throttle thrust ÷ all-up weight. Warning below 2:1, danger below 1.6:1.',
   'Motor thermal': 'Motor temperature after 15 s at full throttle, starting from hover temperature. Danger above 80 °C.',
