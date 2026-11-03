@@ -5,6 +5,7 @@ import { decodeConfig, encodeConfig } from '../lib/share';
 import { fuzzyFilter } from '../lib/fuzzy';
 import { unit } from '../lib/units';
 import { HELP } from '../ui/help';
+import { sketchGeometry } from '../ui/DroneSketch';
 import { readFileSync } from 'node:fs';
 import { DEFAULT_TARGETS, matchKv, optimize } from './optimizer';
 import { airDensity, estimateMotor, estimatePropCp, estimatePropCt, pressureAt, speedOfSound } from './physics';
@@ -253,6 +254,20 @@ describe('component library', () => {
       const out = simulate({ ...five, motor: { ...five.motor, ...mo } });
       expect(out.ok, mo.id).toBe(true);
     }
+  });
+});
+
+describe('drone sketch geometry', () => {
+  it('is to scale: frame from max prop size, props at their own diameter', () => {
+    const base = sketchGeometry(five);
+    expect(base.wheelbase).toBeGreaterThan(180);
+    expect(base.wheelbase).toBeLessThan(260);
+    const smallProp = sketchGeometry({ ...five, prop: { ...five.prop, diameter: 4 } });
+    expect(smallProp.wheelbase).toBe(base.wheelbase);
+    expect(smallProp.propR).toBeLessThan(base.propR);
+    const bigFrame = sketchGeometry({ ...five, frame: { ...five.frame, maxPropIn: 7 } });
+    expect(bigFrame.wheelbase).toBeGreaterThan(base.wheelbase * 1.3);
+    expect(sketchGeometry({ ...five, motor: { ...five.motor, weight: 150 } }).motorD).toBeGreaterThan(base.motorD);
   });
 });
 
