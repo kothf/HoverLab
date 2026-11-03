@@ -12,7 +12,16 @@ import { buildDrive, simulate, validateConfig } from './simulate';
 import { maxPoint, opAtThrottle, opAtThrust } from './solver';
 import type { Config, Results } from './types';
 
-const five = PRESETS[0];
+// Reference 5" build (T-Motor 2207 1950KV, 5.1x4.66x3, 6S 1300) used for bench-range and edge-case tests.
+const five: Config = {
+  name: 'reference 5"',
+  env: { elevation: 0, temperature: 20 },
+  frame: { layout: 'quadX', weight: 180, payload: 0, maxPropIn: 5.1, accessoryCurrent: 1, dragArea: null },
+  battery: { chemistry: 'lipo', s: 6, p: 1, capacity: 1300, cRating: 120, cBurst: 240, resistance: 4, weight: 215, maxDischarge: 0.8 },
+  esc: { maxCurrent: 60, burstCurrent: 70, resistance: 3, weight: 4.5 },
+  motor: { kv: 1950, i0: 1.4, v0: 10, rm: 60, maxPower: 1000, maxCurrent: 45, weight: 33 },
+  prop: { diameter: 5.1, pitch: 4.66, blades: 3, ct: null, cp: null, weight: 4.5 },
+};
 
 function run(c: Config): Results {
   const out = simulate(c);
@@ -61,6 +70,10 @@ describe('operating point solver', () => {
 });
 
 describe('simulation', () => {
+  it('every preset is a clean example: no warnings at all', () => {
+    for (const p of PRESETS) expect(run(p).warnings.map((w) => w.message), p.name).toEqual([]);
+  });
+
   it('runs every preset without errors and with plausible results', () => {
     for (const p of PRESETS) {
       const r = run(p);
