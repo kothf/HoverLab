@@ -3,6 +3,7 @@ import type { Config, OperatingPoint, Results } from '../engine/types';
 import { fmt, fmtNum, fmtThrust } from '../lib/units';
 import { Charts, type Snapshot } from './Charts';
 import { useUnits } from './context';
+import { DroneSketch } from './DroneSketch';
 import { HelpTip } from './HelpTip';
 
 interface Props {
@@ -42,7 +43,9 @@ export function ResultsPanel({ config, results: r, errors, snapshots, onSnapshot
 
   return (
     <div className="results">
-      <div className="kpis">
+      <div className="overview">
+        <DroneSketch config={config} results={r} />
+        <div className="kpis">
         {kpis.map((k) => (
           <div key={k.label} className={`card kpi ${k.tone ?? ''}`}>
             <span className="kpi-label">
@@ -53,6 +56,7 @@ export function ResultsPanel({ config, results: r, errors, snapshots, onSnapshot
             {k.sub && <span className="kpi-sub">{k.sub}</span>}
           </div>
         ))}
+      </div>
       </div>
 
       <div className="card status">

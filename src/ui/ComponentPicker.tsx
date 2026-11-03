@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { fuzzyFilter } from '../lib/fuzzy';
+import { Icon, type IconName } from './Icons';
 
 interface Props<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }> {
   items: T[];
@@ -10,10 +11,11 @@ interface Props<T extends { id: string; brand: string; model: string; custom?: b
   /** Opens the custom-part editor; offered at the bottom of every result list. */
   onDefine?: (query: string) => void;
   kindLabel?: string;
+  icon?: IconName;
 }
 
 /** Fuzzy-search dropdown over library parts (FRS 2.2.3), e.g. "tmotor 2207" or "gem 5". */
-export function ComponentPicker<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }>({ items, current, detail, onPick, placeholder, onDefine, kindLabel = 'part' }: Props<T>) {
+export function ComponentPicker<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }>({ items, current, detail, onPick, placeholder, onDefine, kindLabel = 'part', icon }: Props<T>) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -66,6 +68,7 @@ export function ComponentPicker<T extends { id: string; brand: string; model: st
                 onClick={() => pick(it)}
               >
                 <span className="picker-name">
+                  {icon && <Icon name={icon} size={15} className="picker-icon" />}
                   {it.brand} {it.model}
                   {it.custom && <span className="tag">custom</span>}
                 </span>

@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { PRESETS } from '../data/presets';
 import type { Config } from '../engine/types';
 import type { Prefs } from '../lib/storage';
+import { Icon } from './Icons';
 
 interface Props {
   config: Config;
@@ -62,7 +63,9 @@ export function TopBar({ config, saved, prefs, canExport, onLoad, onSave, onDele
             <button onClick={(e) => { onExport('link'); closeMenu(e.currentTarget); }}>Copy share link</button>
           </div>
         </details>
-        <button className="btn" onClick={onLibrary}>Library</button>
+        <button className="btn" onClick={onLibrary}>
+          <Icon name="library" size={16} /> Library
+        </button>
         <div className="seg" role="group" aria-label="Units">
           <button className={prefs.units === 'metric' ? 'active' : ''} onClick={() => onPrefs({ ...prefs, units: 'metric' })}>Metric</button>
           <button className={prefs.units === 'imperial' ? 'active' : ''} onClick={() => onPrefs({ ...prefs, units: 'imperial' })}>Imperial</button>
