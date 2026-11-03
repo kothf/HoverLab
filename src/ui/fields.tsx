@@ -1,6 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { fmtNum, unit, type Quantity } from '../lib/units';
 import { useUnits } from './context';
+import { HELP } from './help';
+import { HelpTip } from './HelpTip';
 
 interface NumberFieldProps {
   label: string;
@@ -14,6 +16,7 @@ interface NumberFieldProps {
   integer?: boolean;
   /** Allows an empty value meaning "estimate automatically"; the estimate is shown as placeholder. */
   auto?: number;
+  /** Extra help appended to the shared text from help.ts. */
   hint?: string;
   slider?: boolean;
 }
@@ -27,6 +30,7 @@ export function NumberField({ label, value, onChange, quantity, unitLabel, step,
   const shown = value == null ? '' : String(round(toDisp(value)));
   const [text, setText] = useState(shown);
   const [focused, setFocused] = useState(false);
+  const id = useId();
 
   useEffect(() => {
     if (!focused) setText(shown);
@@ -46,10 +50,14 @@ export function NumberField({ label, value, onChange, quantity, unitLabel, step,
 
   const invalid = text.trim() !== '' && !Number.isFinite(Number(text.replace(',', '.')));
   return (
-    <label className={`field${invalid ? ' invalid' : ''}`} title={hint}>
-      <span className="field-label">{label}</span>
+    <div className={`field${invalid ? ' invalid' : ''}`}>
+      <span className="field-label">
+        <label htmlFor={id}>{label}</label>
+        <HelpTip topic={label} text={[HELP[label], hint].filter(Boolean).join(' ') || undefined} />
+      </span>
       <span className="field-input">
         <input
+          id={id}
           type="text"
           inputMode="decimal"
           value={text}
@@ -85,7 +93,7 @@ export function NumberField({ label, value, onChange, quantity, unitLabel, step,
           aria-label={label}
         />
       )}
-    </label>
+    </div>
   );
 }
 
@@ -97,17 +105,21 @@ interface SelectFieldProps<T extends string> {
 }
 
 export function SelectField<T extends string>({ label, value, options, onChange }: SelectFieldProps<T>) {
+  const id = useId();
   return (
-    <label className="field">
-      <span className="field-label">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value as T)}>
+    <div className="field">
+      <span className="field-label">
+        <label htmlFor={id}>{label}</label>
+        <HelpTip topic={label} />
+      </span>
+      <select id={id} value={value} onChange={(e) => onChange(e.target.value as T)}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
 }
 

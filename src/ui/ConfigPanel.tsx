@@ -76,7 +76,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
             onChange={(v) => up('frame', { layout: v }, false)}
           />
           <NumberField label="Max prop size" unitLabel="in" value={c.frame.maxPropIn} onChange={(v) => up('frame', { maxPropIn: v ?? 5 }, false)} step={0.5} />
-          <NumberField label="Frame + electronics" quantity="mass" value={c.frame.weight} onChange={(v) => up('frame', { weight: v ?? 0 }, false)} step={10} hint="Bare frame plus flight controller, receiver, VTX, camera, GPS, wiring" />
+          <NumberField label="Frame + electronics" quantity="mass" value={c.frame.weight} onChange={(v) => up('frame', { weight: v ?? 0 }, false)} step={10} />
           <NumberField label="Payload" quantity="mass" value={c.frame.payload} onChange={(v) => up('frame', { payload: v ?? 0 }, false)} step={10} slider min={0} max={Math.max(2000, Math.ceil(c.frame.payload / 500) * 500)} />
           <NumberField label="Accessory current" unitLabel="A" value={c.frame.accessoryCurrent} onChange={(v) => up('frame', { accessoryCurrent: v ?? 0 }, false)} step={0.1} />
           <NumberField
@@ -112,7 +112,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
             <NumberField label="Parallel P" value={b.p} integer onChange={(v) => up('battery', { p: v ?? 1 })} step={1} min={1} max={20} />
           </div>
           <NumberField label="Capacity per cell" unitLabel="mAh" value={b.capacity} onChange={(v) => up('battery', { capacity: v ?? 100 })} step={100} />
-          <NumberField label="Cell resistance" unitLabel="mΩ" value={b.resistance} onChange={(v) => up('battery', { resistance: v ?? 0 })} step={0.5} hint={`Typical for this capacity: ${defaultCellResistance(b.chemistry, b.capacity).toFixed(1)} mΩ`} />
+          <NumberField label="Cell resistance" unitLabel="mΩ" value={b.resistance} onChange={(v) => up('battery', { resistance: v ?? 0 })} step={0.5} hint={`For this capacity a typical value is ${defaultCellResistance(b.chemistry, b.capacity).toFixed(1)} mΩ`} />
           <NumberField label="Continuous C" unitLabel="C" value={b.cRating} onChange={(v) => up('battery', { cRating: v ?? 1 })} step={5} />
           <NumberField label="Burst C" unitLabel="C" value={b.cBurst} onChange={(v) => up('battery', { cBurst: v ?? 1 })} step={5} />
           <NumberField label="Pack weight" quantity="mass" value={b.weight} auto={batAuto} onChange={(v) => up('battery', { weight: v })} step={10} />
@@ -174,8 +174,8 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
           <NumberField label="Pitch" unitLabel="in" value={c.prop.pitch} onChange={(v) => up('prop', { pitch: v ?? 1 })} step={0.1} />
           <NumberField label="Blades" value={c.prop.blades} integer onChange={(v) => up('prop', { blades: v ?? 2 })} step={1} min={2} max={8} />
           <NumberField label="Weight" quantity="mass" value={c.prop.weight} auto={estimatePropWeight(c.prop.diameter, c.prop.blades)} onChange={(v) => up('prop', { weight: v })} step={1} />
-          <NumberField label="Thrust const. Ct" value={c.prop.ct} auto={estimatePropCt(c.prop.diameter, c.prop.pitch, c.prop.blades)} onChange={(v) => up('prop', { ct: v })} step={0.005} hint="Static thrust coefficient T = Ct·ρ·n²·D⁴. Leave empty to estimate from geometry." />
-          <NumberField label="Power const. Cp" value={c.prop.cp} auto={estimatePropCp(c.prop.diameter, c.prop.pitch, c.prop.blades)} onChange={(v) => up('prop', { cp: v })} step={0.005} hint="Static power coefficient P = Cp·ρ·n³·D⁵. Leave empty to estimate from geometry." />
+          <NumberField label="Thrust const. Ct" value={c.prop.ct} auto={estimatePropCt(c.prop.diameter, c.prop.pitch, c.prop.blades)} onChange={(v) => up('prop', { ct: v })} step={0.005} />
+          <NumberField label="Power const. Cp" value={c.prop.cp} auto={estimatePropCp(c.prop.diameter, c.prop.pitch, c.prop.blades)} onChange={(v) => up('prop', { cp: v })} step={0.005} />
         </div>
       </Section>
     </div>

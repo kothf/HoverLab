@@ -3,6 +3,7 @@ import type { Config, OperatingPoint, Results } from '../engine/types';
 import { fmt, fmtNum, fmtThrust } from '../lib/units';
 import { Charts, type Snapshot } from './Charts';
 import { useUnits } from './context';
+import { HelpTip } from './HelpTip';
 
 interface Props {
   config: Config;
@@ -44,7 +45,10 @@ export function ResultsPanel({ config, results: r, errors, snapshots, onSnapshot
       <div className="kpis">
         {kpis.map((k) => (
           <div key={k.label} className={`card kpi ${k.tone ?? ''}`}>
-            <span className="kpi-label">{k.label}</span>
+            <span className="kpi-label">
+              {k.label}
+              <HelpTip topic={k.label} />
+            </span>
             <span className="kpi-value">{k.value}</span>
             {k.sub && <span className="kpi-sub">{k.sub}</span>}
           </div>
@@ -55,7 +59,10 @@ export function ResultsPanel({ config, results: r, errors, snapshots, onSnapshot
         {r.status.map((s) => (
           <div key={s.key} className={`status-item ${s.severity}`}>
             <span className="dot" aria-hidden />
-            <span className="status-label">{s.label}</span>
+            <span className="status-label">
+              {s.label}
+              <HelpTip topic={s.label} />
+            </span>
             <span className="status-value">{s.key === 'thermal' ? fmt(system, 'temp', r.motorTempMax) : s.value}</span>
           </div>
         ))}
@@ -128,7 +135,10 @@ function MetricsTable({ config, r }: { config: Config; r: Results }) {
           <tbody>
             {rows.map((row) => (
               <tr key={row.label}>
-                <th scope="row">{row.label}</th>
+                <th scope="row">
+                  {row.label}
+                  <HelpTip topic={row.label} />
+                </th>
                 {cols.map((c) => <td key={c.title}>{c.op ? row.get(c.op) : '—'}</td>)}
               </tr>
             ))}
@@ -137,22 +147,22 @@ function MetricsTable({ config, r }: { config: Config; r: Results }) {
       </div>
       <div className="verdict-grid">
         <dl>
-          <dt>Motor temp, hover</dt><dd>{fmt(system, 'temp', r.motorTempHover)}</dd>
-          <dt>Motor temp, {MAX_TEMP_WINDOW_S} s full</dt><dd>{fmt(system, 'temp', r.motorTempMax)}</dd>
-          <dt>Max extra payload</dt><dd>{fmt(system, 'mass', r.maxPayload)}</dd>
-          <dt>Air density</dt><dd>{fmtNum(r.airDensity, 3)} kg/m³</dd>
+          <dt>Motor temp, hover<HelpTip topic="Motor temp, hover" /></dt><dd>{fmt(system, 'temp', r.motorTempHover)}</dd>
+          <dt>Motor temp, {MAX_TEMP_WINDOW_S} s full<HelpTip topic="Motor thermal" /></dt><dd>{fmt(system, 'temp', r.motorTempMax)}</dd>
+          <dt>Max extra payload<HelpTip topic="Max extra payload" /></dt><dd>{fmt(system, 'mass', r.maxPayload)}</dd>
+          <dt>Air density<HelpTip topic="Air density" /></dt><dd>{fmtNum(r.airDensity, 3)} kg/m³</dd>
         </dl>
         <dl>
-          <dt>Pack</dt><dd>{fmtNum(r.battery.nominalVoltage, 1)} V nom · {fmtNum(r.battery.fullVoltage, 1)} V full</dd>
-          <dt>Energy</dt><dd>{fmtNum(r.battery.energy, 1)} Wh · {fmtNum(r.battery.usable)} mAh usable</dd>
-          <dt>Pack resistance</dt><dd>{fmtNum(r.battery.resistance * 1000, 1)} mΩ</dd>
-          <dt>Prop Ct / Cp</dt><dd>{fmtNum(r.propCt, 3)} / {fmtNum(r.propCp, 3)}{config.prop.ct == null ? ' (est.)' : ''}</dd>
+          <dt>Pack<HelpTip topic="Pack" /></dt><dd>{fmtNum(r.battery.nominalVoltage, 1)} V nom · {fmtNum(r.battery.fullVoltage, 1)} V full</dd>
+          <dt>Energy<HelpTip topic="Energy" /></dt><dd>{fmtNum(r.battery.energy, 1)} Wh · {fmtNum(r.battery.usable)} mAh usable</dd>
+          <dt>Pack resistance<HelpTip topic="Pack resistance" /></dt><dd>{fmtNum(r.battery.resistance * 1000, 1)} mΩ</dd>
+          <dt>Prop Ct / Cp<HelpTip topic="Prop Ct / Cp" /></dt><dd>{fmtNum(r.propCt, 3)} / {fmtNum(r.propCp, 3)}{config.prop.ct == null ? ' (est.)' : ''}</dd>
         </dl>
         <dl>
-          <dt>Frame + payload</dt><dd>{fmt(system, 'mass', w.frame + w.payload)}</dd>
-          <dt>Motors + props</dt><dd>{fmt(system, 'mass', w.motors + w.props)}</dd>
-          <dt>ESCs</dt><dd>{fmt(system, 'mass', w.escs)}</dd>
-          <dt>Battery</dt><dd>{fmt(system, 'mass', w.battery)}</dd>
+          <dt>Frame + payload<HelpTip topic="Frame + payload" /></dt><dd>{fmt(system, 'mass', w.frame + w.payload)}</dd>
+          <dt>Motors + props<HelpTip topic="Motors + props" /></dt><dd>{fmt(system, 'mass', w.motors + w.props)}</dd>
+          <dt>ESCs<HelpTip topic="ESCs" /></dt><dd>{fmt(system, 'mass', w.escs)}</dd>
+          <dt>Battery<HelpTip topic="Battery" /></dt><dd>{fmt(system, 'mass', w.battery)}</dd>
         </dl>
       </div>
     </div>
