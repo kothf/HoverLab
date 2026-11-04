@@ -382,3 +382,8 @@ th .help, dt .help { margin-inline-start: 5px; }
 }
 [dir='rtl'] .sketch-caption span { text-align: center; }
 [dir='rtl'] .field-unit { direction: ltr; unicode-bidi: isolate; }
+
+.help-table { font-size: 13px; margin: 8px 0 4px; }
+.help-table th, .help-table td { text-align: start; white-space: normal; vertical-align: top; padding: 6px 8px; }
+.help-table thead th { color: var(--muted); }
+.help-body ol > li { margin-bottom: 6px; }

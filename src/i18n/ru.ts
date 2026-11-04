@@ -469,6 +469,8 @@ export const RU: Record<string, string> = {
   'About HoverLab': 'О HoverLab',
   'Help topics': 'Разделы справки',
   'Getting started': 'Начало работы',
+  'Design walkthroughs': 'Примеры проектирования',
+  'Reading results': 'Как читать результаты',
   'Parts library': 'Библиотека компонентов',
   'How it calculates': 'Как считается',
   FAQ: 'Вопросы и ответы',

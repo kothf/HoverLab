@@ -439,6 +439,8 @@ export const HE: Record<string, string> = {
   'About HoverLab': 'אודות HoverLab',
   'Help topics': 'נושאי עזרה',
   'Getting started': 'צעדים ראשונים',
+  'Design walkthroughs': 'דוגמאות תכנון',
+  'Reading results': 'איך לקרוא את התוצאות',
   'Parts library': 'ספריית רכיבים',
   'How it calculates': 'איך זה מחושב',
   FAQ: 'שאלות נפוצות',

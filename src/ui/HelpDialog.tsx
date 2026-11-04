@@ -5,10 +5,12 @@ import { HELP_CONTENT_RU } from '../i18n/guide-ru';
 import { ext, REPO } from './helpLinks';
 import { Icon } from './Icons';
 
-export type HelpTab = 'start' | 'calc' | 'optimizer' | 'library' | 'model' | 'warnings' | 'faq' | 'about';
+export type HelpTab = 'start' | 'examples' | 'reading' | 'calc' | 'optimizer' | 'library' | 'model' | 'warnings' | 'faq' | 'about';
 
 const TABS: { key: HelpTab; label: string }[] = [
   { key: 'start', label: 'Getting started' },
+  { key: 'examples', label: 'Design walkthroughs' },
+  { key: 'reading', label: 'Reading results' },
   { key: 'calc', label: 'Calculator' },
   { key: 'optimizer', label: 'Design optimizer' },
   { key: 'library', label: 'Parts library' },
@@ -46,8 +48,153 @@ const CONTENT: Record<HelpTab, ReactNode> = {
         </li>
       </ol>
       <p className="muted">
-        Every input and result has a small <strong>?</strong> next to it with a short explanation and typical values.
+        Every input and result has a small <strong>?</strong> next to it with a short explanation and typical values. For worked examples see{' '}
+        <strong>Design walkthroughs</strong>, and for target values see <strong>Reading results</strong>.
       </p>
+    </>
+  ),
+  examples: (
+    <>
+      <p>
+        Designing a multirotor is iterative: decide what the craft is for, start from something close, change <strong>one thing at a time</strong> and check
+        the result again. Each walkthrough starts from a preset so you can follow along. Before every change, press <em>+ Pin for comparison</em> so the old
+        thrust curve stays on the chart.
+      </p>
+
+      <h4>1. 5″ freestyle quad on 6S</h4>
+      <ol>
+        <li>
+          Presets → <strong>5″ freestyle 6S</strong>. Goal: strong punch and about 4–6 minutes of hard flying.
+        </li>
+        <li>
+          Read the key numbers: <strong>Thrust / weight</strong> about 9:1 (freestyle wants 6–12:1), <strong>Hover throttle</strong> about 29 % (20–35 % is
+          normal for freestyle), <em>mixed</em> flight time about 5 min. All status lights are green.
+        </li>
+        <li>
+          Try a lighter prop: Propeller → search <code>51433</code>. Thrust/weight drops slightly, motor temperature falls a little and mixed time gains about
+          10 seconds. Keep whichever feel you prefer.
+        </li>
+        <li>
+          Try a smaller pack: Battery → search <code>cnhl 6s 1300</code>. The quad gets about 20 g lighter but hover time falls by more than a minute and the
+          battery C-rate rises. For freestyle the 1500 mAh pack is the better trade here.
+        </li>
+        <li>
+          If <strong>Motor thermal</strong> turns amber or red, use a lower-Kv motor or a lighter-pitch prop. If <strong>Battery C</strong> turns amber, pick a
+          higher-C or larger pack.
+        </li>
+      </ol>
+
+      <h4>2. 6″ long-range on Li-ion</h4>
+      <ol>
+        <li>
+          Presets → <strong>6″ long range 6S3P Li-ion</strong>. Goal: the longest distance per battery.
+        </li>
+        <li>
+          Look at <strong>Best range</strong> (about 27 km at about 48 km/h) and the speed that gives it, hover throttle (35–50 % is efficient) and the battery
+          lights. Li-ion cells hold lots of energy but deliver little current, so C-rate and voltage sag are what limit these builds.
+        </li>
+        <li>
+          Change Battery → <strong>Parallel P</strong> from 3 to 2. The quad becomes about 450 g lighter, but the battery C-rate turns red and range falls to
+          about 25 km: two cells in parallel cannot supply full throttle. Go back to 3P.
+        </li>
+        <li>
+          Open <strong>Design optimizer</strong>, choose Objective <strong>Maximum flight range</strong>, set <strong>Min thrust/weight</strong> to 3, and press{' '}
+          <strong>Run automatic design optimizer</strong>. Apply the best design.
+        </li>
+        <li>
+          The optimizer uses generic parts. In the Calculator, search the library for a real motor with similar Kv and size, and a real prop of the same size,
+          then check that everything stays green.
+        </li>
+      </ol>
+
+      <h4>3. Camera lifter carrying 500 g</h4>
+      <ol>
+        <li>
+          Presets → <strong>450 camera quad 3S</strong>, then set Frame &amp; payload → <strong>Payload</strong> to 500 g (for example a gimbal and action
+          camera).
+        </li>
+        <li>
+          Rules for a camera craft: thrust/weight at least 2:1, hover throttle at most 55 %, no red lights. Here thrust/weight is about 2.3:1 but hover throttle
+          rises to about 62 % (amber), so the drone would feel sluggish in wind.
+        </li>
+        <li>
+          Fix it one step at a time: a bigger prop if the frame allows (raise <strong>Max prop size</strong> or <strong>Wheelbase</strong>), a 4S pack with the
+          suggested Kv (change <strong>Series S</strong> and accept the Kv hint), or a lighter battery. Check the <strong>Conclusions</strong> card for the
+          practical payload after each change.
+        </li>
+        <li>
+          Or let the optimizer do it: Objective <strong>Maximum payload / lift</strong>, Target payload 500 g, Target endurance 15 min, then Run and Apply.
+        </li>
+      </ol>
+
+      <h4>4. Starting from a goal only</h4>
+      <ol>
+        <li>In the Calculator, set the frame weight (with electronics), the payload and the largest prop or wheelbase your frame allows.</li>
+        <li>In Design optimizer, choose the objective and limits and run it. Every design it returns already passes all checks.</li>
+        <li>Apply one, then replace each generic part with a real part from the library (search by size and Kv) and fix any warning that appears.</li>
+        <li>Save the build and export a PDF report for your parts list.</li>
+      </ol>
+    </>
+  ),
+  reading: (
+    <>
+      <p>What good numbers look like. Ranges are typical for the class of craft; your own goal decides where you want to be.</p>
+      <div className="table-scroll">
+        <table className="help-table">
+          <thead>
+            <tr>
+              <th>Indicator</th>
+              <th>Good</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Thrust / weight</td>
+              <td>racing 10–15, freestyle 6–12, long range 3–5, camera and heavy lift 2–3</td>
+              <td>Never below 2:1 for safe control.</td>
+            </tr>
+            <tr>
+              <td>Hover throttle</td>
+              <td>25–55 %</td>
+              <td>Above 60 % leaves little margin; very low values mean an overpowered, less efficient hover.</td>
+            </tr>
+            <tr>
+              <td>Specific thrust</td>
+              <td>FPV 4–7 g/W, camera and big-prop endurance builds 8–12 g/W</td>
+              <td>Higher means more flight time from the same battery. Big slow props win.</td>
+            </tr>
+            <tr>
+              <td>Motor temperature (15 s full throttle)</td>
+              <td>below 65 °C</td>
+              <td>65–80 °C is warm, above 80 °C is an overload.</td>
+            </tr>
+            <tr>
+              <td>Battery C-rate at full throttle</td>
+              <td>below the continuous rating</td>
+              <td>Printed C ratings are often optimistic; keep a margin.</td>
+            </tr>
+            <tr>
+              <td>Voltage under full load</td>
+              <td>above 3.3 V/cell (LiPo), 3.0 V/cell (Li-ion)</td>
+              <td>Lower means the pack is too small or too weak for the motors.</td>
+            </tr>
+            <tr>
+              <td>Prop tip Mach</td>
+              <td>below 0.7</td>
+              <td>Faster tips waste power and get loud.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <h4>Rules of thumb</h4>
+      <ul>
+        <li>The largest prop the frame fits is usually the most efficient; pick the motor Kv to match it.</li>
+        <li>Prop speed is set by Kv × voltage. When you change the cell count, scale Kv the other way (HoverLab suggests the value).</li>
+        <li>For endurance the battery is typically 30–45 % of all-up weight; above about 50 % extra capacity adds little time.</li>
+        <li>Change one thing at a time, and pin the previous build for comparison.</li>
+        <li>Prefer measured motor and prop data over estimates (fields marked <em>auto</em> or parts marked <em>est.</em>).</li>
+      </ul>
     </>
   ),
   calc: (
