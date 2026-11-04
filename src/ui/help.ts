@@ -74,9 +74,11 @@ export const HELP: Record<string, string> = {
 
   // Optimizer
   Objective:
-    'Maximum flight endurance: longest hover time for your payload. Maximum payload: most spare lift while still meeting the target endurance.',
+    'Maximum flight endurance: longest hover time for your payload. Maximum payload: most spare lift while still meeting the target endurance. Maximum flight range: longest distance on one battery at the best cruise speed (forward-flight model with drag).',
   'Battery chemistry': 'Chemistry the optimizer sizes the battery with. Li-ion usually wins endurance; LiPo wins payload and punch.',
   'Target payload': 'Payload the design must carry (action camera, gimbal, sensors, cargo). Added on top of Frame + electronics; 0 means no payload.',
+  'Min flight range':
+    'Shortest acceptable best-range distance on one battery. Designs that fly less far are dropped in every mode; 0 turns the requirement off. Range is flown at the speed that gives the longest distance, with usable capacity as set for the battery.',
   'Target endurance': 'Hover time to reach. In payload mode designs below it are rejected; in endurance mode results that reach it are shown in green.',
   'Min thrust/weight': 'Required ratio of full-throttle thrust to all-up weight. 2:1 is the minimum for safe control; FPV freestyle uses 5–10:1.',
   'Max hover throttle': 'Highest acceptable hover throttle. Lower leaves more control authority; 50–60 % is typical.',
