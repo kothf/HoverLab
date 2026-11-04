@@ -208,6 +208,12 @@ th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--gr
 th[scope='row'], thead th:first-child { text-align: left; color: var(--muted); font-weight: 400; }
 thead th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 table.compact th, table.compact td { padding: 4px 6px; font-size: 13px; }
+.conclusions h3 { margin: 0 0 8px; font-size: 15px; display: flex; align-items: center; gap: 4px; }
+.conclusions ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.conclusions li { padding: 8px 12px; border-radius: 8px; border-left: 3px solid var(--border); background: var(--panel-2); font-size: 13px; line-height: 1.45; }
+.conclusions li.good { border-left-color: var(--good); }
+.conclusions li.tip { border-left-color: var(--series-2); }
+.conclusions li.caution { border-left-color: var(--warn); }
 .verdict-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 14px; }
 @media (max-width: 800px) { .verdict-grid { grid-template-columns: 1fr; } }
 .verdict-grid dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13px; }

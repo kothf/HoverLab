@@ -97,7 +97,7 @@ export const HELP: Record<string, string> = {
   'Motor thermal': 'Motor temperature after 15 s at full throttle, starting from hover temperature. Danger above 80 °C.',
   'Motor load': 'Full-throttle motor current as a share of its rated max current.',
   'ESC load': 'Full-throttle current per motor as a share of the ESC continuous rating.',
-  'Battery C': 'Full-throttle C-rate against the continuous rating.',
+  'Battery C': 'Full-throttle C-rate against the continuous rating. Warning above 90 % of the rating or when full throttle near the end of the pack sags below the cell minimum.',
 
   // Table rows
   Throttle: 'ESC throttle (PWM duty) for this operating point.',
@@ -113,7 +113,12 @@ export const HELP: Record<string, string> = {
   'Battery C-rate': 'Battery current ÷ capacity.',
   'Prop tip Mach': 'Blade tip speed as a fraction of the speed of sound. Above 0.7 efficiency drops and noise rises sharply.',
   'Motor temp, hover': 'Steady motor temperature while hovering.',
-  'Max extra payload': 'Extra payload you could add before hover throttle reaches 80 %.',
+  'Max extra payload': 'Extra payload you could add before hover throttle reaches 80 %. The craft lifts off but has little control margin; see practical payload.',
+  'Practical extra payload': 'Extra payload that still leaves thrust/weight ≥ 2 and hover throttle ≤ 60 %, so the craft stays controllable in wind.',
+  'Hover time per 100 g': 'Hover time lost for every extra 100 g of payload, at the current weight.',
+  'Sag at end of pack': 'Cell voltage at full throttle when the usable capacity is nearly spent. Below the chemistry minimum, a punch late in the flight trips low-voltage protection.',
+  Conclusions:
+    'Plain-language reading of the results: what the build suits, which part limits it, what payload is practical, and parts that look mismatched. Tips are suggestions, not errors.',
   'Air density': 'Air density at your elevation and temperature (sea level, 15 °C: 1.225 kg/m³).',
   Pack: 'Nominal and fully charged pack voltage.',
   Energy: 'Pack energy and usable capacity.',

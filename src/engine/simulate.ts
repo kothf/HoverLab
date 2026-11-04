@@ -35,6 +35,9 @@ import type {
 } from './types';
 
 export const HOVER_THROTTLE_LIMIT = 0.8;
+/** Limits for the practical payload: still flyable with control margin, not just able to lift off. */
+export const PRACTICAL_TW = 2;
+export const PRACTICAL_HOVER_THROTTLE = 0.6;
 export const MOTOR_TEMP_LIMIT = 80;
 
 /** FRS 3.4 data verification: reject physically impossible inputs before simulating. */
@@ -119,6 +122,12 @@ export function buildDrive(c: Config): Drive {
     ambient: c.env.temperature,
     speedOfSound: speedOfSound(c.env.temperature),
   };
+}
+
+/** Resting cell voltage once the usable capacity is spent, interpolated from full to the 80 % point. */
+export function endCellVoltage(c: Config): number {
+  const chem = CHEMISTRIES[c.battery.chemistry];
+  return chem.full - (chem.full - chem.empty) * Math.min(c.battery.maxDischarge / 0.8, 1.15);
 }
 
 const sum = (w: WeightBreakdown) => w.frame + w.payload + w.motors + w.props + w.escs + w.battery;
@@ -278,11 +287,17 @@ function assess(c: Config, r: Omit<Results, 'warnings' | 'status'>): { warnings:
   } else if (max.cRate > c.battery.cRating) {
     cSev = 'warn';
     add('c-rate', 'warn', `Battery C-rate ${max.cRate.toFixed(1)}C exceeds continuous rating ${c.battery.cRating}C.`);
+  } else if (max.cRate > 0.9 * c.battery.cRating) {
+    cSev = 'warn';
+    add('c-rate', 'warn', `Battery runs at ${pct(max.cRate / c.battery.cRating)} of its continuous ${c.battery.cRating}C rating at full throttle.`);
   }
   const cellMin = CHEMISTRIES[c.battery.chemistry].min;
   if (max.batteryVoltage / c.battery.s < cellMin) {
     cSev = worst(cSev, 'warn');
     add('sag', 'warn', `Voltage sags to ${(max.batteryVoltage / c.battery.s).toFixed(2)} V/cell at full throttle (min ${cellMin} V).`);
+  } else if (r.sagEnd < cellMin) {
+    cSev = worst(cSev, 'warn');
+    add('sag', 'warn', `Near the end of the pack, full throttle sags to ${r.sagEnd.toFixed(2)} V/cell (min ${cellMin} V): expect low-voltage cut-outs.`);
   }
 
   // Geometry
@@ -332,6 +347,10 @@ export function simulate(c: Config): SimulationOutcome {
   const ff = forwardFlight(dr, auw, cda, max);
 
   const maxPayload = maxExtraPayload(dr, auw);
+  const practicalPayload = Math.max(0, Math.min(max.totalThrust / PRACTICAL_TW - auw, maxExtraPayload(dr, auw, PRACTICAL_HOVER_THROTTLE)));
+  const heavier = hoverAt(dr, auw + 100);
+  const payloadCost = hover && heavier ? hoverTime - flightMinutes(dr, heavier.batteryCurrent) : 0;
+  const sagEnd = maxPoint({ ...dr, voc: c.battery.s * endCellVoltage(c) }).batteryVoltage / c.battery.s;
   const payloadEnvelope: PayloadPoint[] = [];
   if (hover) {
     const steps = 12;
@@ -372,6 +391,9 @@ export function simulate(c: Config): SimulationOutcome {
     maxSpeed: ff.maxSpeed,
     range: ff.range,
     maxPayload,
+    practicalPayload,
+    payloadCost,
+    sagEnd,
     curves,
     payloadEnvelope,
   };

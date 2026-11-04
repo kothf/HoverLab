@@ -41,6 +41,8 @@ export interface ChemistryInfo {
   nominal: number; // V per cell under typical load
   full: number;
   min: number; // minimum cell voltage under load
+  /** Resting cell voltage once 80 % of capacity is used, i.e. at the end of a normal flight. */
+  empty: number;
   energyDensity: number; // Wh/kg for a complete pack
   cRating: number;
   cBurst: number;
@@ -49,10 +51,10 @@ export interface ChemistryInfo {
 }
 
 export const CHEMISTRIES: Record<Chemistry, ChemistryInfo> = {
-  lipo: { label: 'LiPo', nominal: 3.7, full: 4.2, min: 3.3, energyDensity: 150, cRating: 50, cBurst: 100, resistanceK: 4.5 },
-  lihv: { label: 'LiHV', nominal: 3.8, full: 4.35, min: 3.3, energyDensity: 160, cRating: 50, cBurst: 100, resistanceK: 4.5 },
-  lifepo4: { label: 'LiFePO4', nominal: 3.3, full: 3.65, min: 2.8, energyDensity: 100, cRating: 20, cBurst: 40, resistanceK: 20 },
-  liion: { label: 'Li-ion', nominal: 3.6, full: 4.2, min: 3.0, energyDensity: 200, cRating: 8, cBurst: 15, resistanceK: 75 },
+  lipo: { label: 'LiPo', nominal: 3.7, full: 4.2, min: 3.3, empty: 3.65, energyDensity: 150, cRating: 50, cBurst: 100, resistanceK: 4.5 },
+  lihv: { label: 'LiHV', nominal: 3.8, full: 4.35, min: 3.3, empty: 3.75, energyDensity: 160, cRating: 50, cBurst: 100, resistanceK: 4.5 },
+  lifepo4: { label: 'LiFePO4', nominal: 3.3, full: 3.65, min: 2.8, empty: 3.15, energyDensity: 100, cRating: 20, cBurst: 40, resistanceK: 20 },
+  liion: { label: 'Li-ion', nominal: 3.6, full: 4.2, min: 3.0, empty: 3.45, energyDensity: 200, cRating: 8, cBurst: 15, resistanceK: 75 },
 };
 
 export function defaultCellResistance(chem: Chemistry, capacityMah: number): number {
