@@ -19,6 +19,7 @@ interface Props {
   onImportConfig: (file: File) => void;
   onExport: (kind: 'csv' | 'pdf' | 'json' | 'link') => void;
   onLibrary: () => void;
+  onHelp: (tab: 'start' | 'about') => void;
   onPrefs: (p: Prefs) => void;
 }
 
@@ -26,7 +27,7 @@ function closeMenu(el: HTMLElement) {
   el.closest('details')?.removeAttribute('open');
 }
 
-export function TopBar({ view, onView, config, saved, prefs, canExport, onLoad, onSave, onDeleteSaved, onImportConfig, onExport, onLibrary, onPrefs }: Props) {
+export function TopBar({ view, onView, config, saved, prefs, canExport, onLoad, onSave, onDeleteSaved, onImportConfig, onExport, onLibrary, onHelp, onPrefs }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   return (
     <header className="topbar">
@@ -79,6 +80,13 @@ export function TopBar({ view, onView, config, saved, prefs, canExport, onLoad, 
         <button className="btn" onClick={onLibrary}>
           <Icon name="library" size={16} /> Library
         </button>
+        <details className="menu">
+          <summary className="btn" aria-label="Help and about">? Help</summary>
+          <div className="menu-list">
+            <button onClick={(e) => { onHelp('start'); closeMenu(e.currentTarget); }}>User guide</button>
+            <button onClick={(e) => { onHelp('about'); closeMenu(e.currentTarget); }}>About &amp; credits</button>
+          </div>
+        </details>
         <div className="seg" role="group" aria-label="Units">
           <button className={prefs.units === 'metric' ? 'active' : ''} onClick={() => onPrefs({ ...prefs, units: 'metric' })}>Metric</button>
           <button className={prefs.units === 'imperial' ? 'active' : ''} onClick={() => onPrefs({ ...prefs, units: 'imperial' })}>Imperial</button>

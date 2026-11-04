@@ -20,6 +20,7 @@ import type { Snapshot } from './ui/Charts';
 import { applyPart } from './ui/applyPart';
 import { ConfigPanel } from './ui/ConfigPanel';
 import { UnitsContext } from './ui/context';
+import { HelpDialog, type HelpTab } from './ui/HelpDialog';
 import { LibraryDialog } from './ui/LibraryDialog';
 import { OptimizerPanel } from './ui/OptimizerPanel';
 import { ResultsPanel } from './ui/ResultsPanel';
@@ -43,6 +44,7 @@ export default function App() {
   const [libraryOpen, setLibraryOpen] = useState<{ kind: ComponentKind; model: string | null } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const reqRef = useRef(0);
+  const [helpTab, setHelpTab] = useState<HelpTab | null>(null);
   const [view, setView] = useState<View>(() => (location.hash === '#optimizer' ? 'optimizer' : 'calc'));
 
   const library = useMemo(() => mergedLibrary(custom), [custom]);
@@ -156,6 +158,7 @@ export default function App() {
           onImportConfig={importConfig}
           onExport={exportAs}
           onLibrary={() => setLibraryOpen({ kind: 'motor', model: null })}
+          onHelp={setHelpTab}
           onPrefs={setPrefs}
         />
         <main className="optimizer-view" hidden={view !== 'optimizer'}>
@@ -207,6 +210,7 @@ export default function App() {
             onClose={() => setLibraryOpen(null)}
           />
         )}
+        {helpTab && <HelpDialog initial={helpTab} onClose={() => setHelpTab(null)} />}
         {toast && <div className="toast" role="status">{toast}</div>}
       </div>
     </UnitsContext.Provider>

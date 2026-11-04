@@ -350,3 +350,19 @@ th .help, dt .help { margin-left: 5px; }
 .build-summary dt { color: var(--muted); }
 .build-summary dd { margin: 0; }
 .build-summary p { margin: 6px 0 0; }
+
+/* Help dialog */
+.help-modal { width: min(980px, 100%); }
+.help-modal .modal-head h2 { display: flex; align-items: center; gap: 8px; }
+.help-layout { display: grid; grid-template-columns: 190px 1fr; gap: 16px; min-height: 0; overflow: hidden; }
+.help-nav { display: flex; flex-direction: column; gap: 2px; }
+.help-nav button { text-align: left; border: 0; background: none; padding: 7px 10px; border-radius: 7px; cursor: pointer; color: var(--muted); }
+.help-nav button:hover { color: var(--text); background: var(--panel-2); }
+.help-nav button.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.help-body { overflow-y: auto; max-height: calc(90vh - 90px); padding-right: 6px; line-height: 1.6; }
+.help-body h3 { margin-top: 0; }
+.help-body h4 { margin: 14px 0 4px; text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--text); }
+.help-body li { margin-bottom: 4px; }
+.help-body code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+.help-body a { color: var(--accent); }
+@media (max-width: 700px) { .help-layout { grid-template-columns: 1fr; } .help-nav { flex-direction: row; flex-wrap: wrap; } }
