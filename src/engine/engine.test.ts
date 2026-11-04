@@ -240,6 +240,24 @@ describe('optimizer', () => {
     }
   });
 
+  it('range mode returns clean designs ordered by best range', () => {
+    const { candidates } = optimize({ ...DEFAULT_TARGETS, mode: 'range' });
+    expect(candidates.length).toBeGreaterThan(0);
+    for (let i = 1; i < candidates.length; i++) expect(candidates[i - 1].range).toBeGreaterThanOrEqual(candidates[i].range);
+    for (const c of candidates) {
+      const out = simulate(c.config);
+      expect(out.ok && out.results.warnings.length).toBe(0);
+    }
+  });
+
+  it('honours the minimum range in every mode', () => {
+    const best = optimize({ ...DEFAULT_TARGETS, mode: 'range' }).candidates[0].range;
+    const minRange = best * 0.9;
+    for (const mode of ['endurance', 'payload', 'range'] as const) {
+      for (const c of optimize({ ...DEFAULT_TARGETS, mode, flightTime: 10, minRange }).candidates) expect(c.range).toBeGreaterThanOrEqual(minRange);
+    }
+  });
+
   it('ranks endurance results by hover time', () => {
     const { candidates } = optimize(DEFAULT_TARGETS);
     for (let i = 1; i < candidates.length; i++) expect(candidates[i - 1].score).toBeGreaterThanOrEqual(candidates[i].score);

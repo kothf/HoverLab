@@ -57,6 +57,7 @@ export function OptimizerPanel({ config, onApply }: Props) {
           options={[
             { value: 'endurance', label: 'Maximum flight endurance' },
             { value: 'payload', label: 'Maximum payload / lift' },
+            { value: 'range', label: 'Maximum flight range' },
           ]}
           onChange={(v) => set({ mode: v })}
         />
@@ -68,6 +69,7 @@ export function OptimizerPanel({ config, onApply }: Props) {
         />
         <NumberField label="Target payload" quantity="mass" value={t.payload} onChange={(v) => set({ payload: v ?? 0 })} step={50} />
         <NumberField label="Target endurance" unitLabel="min" value={t.flightTime} onChange={(v) => set({ flightTime: v ?? 0 })} step={1} />
+        <NumberField label="Min flight range" quantity="distance" value={t.minRange} onChange={(v) => set({ minRange: Math.max(0, v ?? 0) })} step={0.5} min={0} />
         <NumberField label="Frame + electronics" quantity="mass" value={t.frameWeight} onChange={(v) => set({ frameWeight: v ?? 0 })} step={10} />
         <NumberField label="Max prop size" unitLabel="in" value={t.maxPropIn} onChange={(v) => set({ maxPropIn: v ?? 5 })} step={0.5} />
         <NumberField
@@ -109,6 +111,9 @@ export function OptimizerPanel({ config, onApply }: Props) {
                 </span>
                 <span>Motor {c.config.motor.weight} g · {c.config.motor.kv}KV</span>
                 <span className={c.meetsFlightTime ? 'ok-text' : 'warn-text'}>Hover {fmtNum(c.hoverTime, 1)} min</span>
+                <span className={t.mode === 'range' ? 'ok-text' : undefined}>
+                  Range {fmt(system, 'distance', c.range)} at {fmt(system, 'speed', c.rangeSpeed)}
+                </span>
                 <span>T/W {fmtNum(c.thrustToWeight, 2)}</span>
                 <span>Throttle {fmtNum(c.hoverThrottle * 100)} %</span>
                 <span>{fmtNum(c.specificThrust, 2)} g/W</span>

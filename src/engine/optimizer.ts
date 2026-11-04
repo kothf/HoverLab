@@ -16,7 +16,7 @@ import { MAX_TEMP_WINDOW_S, flightMinutes, maxPoint, opAtThrust, thermalModel, t
 import { simulate } from './simulate';
 import type { Chemistry, Config, Layout, MotorConfig } from './types';
 
-export type OptimizerMode = 'endurance' | 'payload';
+export type OptimizerMode = 'endurance' | 'payload' | 'range';
 
 export interface OptimizerTargets {
   mode: OptimizerMode;
@@ -25,6 +25,7 @@ export interface OptimizerTargets {
   frameWeight: number; // g incl. electronics
   payload: number; // g
   flightTime: number; // min, target hover time
+  minRange: number; // km, required best-range distance (0 = no requirement)
   minThrustRatio: number;
   maxPropIn: number;
   minCells: number;
@@ -47,6 +48,8 @@ export interface Candidate {
   motorTempMax: number;
   liftCapacity: number; // extra payload g available while keeping the target thrust ratio
   meetsFlightTime: boolean;
+  range: number; // km, best range
+  rangeSpeed: number; // m/s, speed for best range
 }
 
 export interface OptimizerResult {
@@ -63,6 +66,7 @@ export const DEFAULT_TARGETS: OptimizerTargets = {
   frameWeight: 400,
   payload: 300,
   flightTime: 20,
+  minRange: 0,
   minThrustRatio: 2,
   maxPropIn: 10,
   minCells: 2,
@@ -83,6 +87,8 @@ const LIION_CELL_MAH = 5000;
 const MAX_TIP_MACH = 0.7;
 // Designs kept per (prop diameter, cell count) family before the full warning check.
 const PER_FAMILY = 8;
+// Shortlisted designs simulated in full for the range objective.
+const RANGE_POOL = 80;
 // Battery may make up at most half of the all-up weight; beyond that endurance gains vanish.
 const MAX_BATTERY_TO_DRY = 1;
 
@@ -185,7 +191,9 @@ export function optimize(t: OptimizerTargets): OptimizerResult {
               if (temp > 80) continue;
               const hoverTime = flightMinutes(dr, hover.batteryCurrent);
               let score: number;
-              if (t.mode === 'endurance') score = hoverTime;
+              // Range needs the forward-flight sweep, too slow here; hover time is a close proxy and the
+              // shortlist is re-ranked by the real best range below.
+              if (t.mode === 'endurance' || t.mode === 'range') score = hoverTime;
               else {
                 if (hoverTime < t.flightTime) continue;
                 score = max.totalThrust / t.minThrustRatio - auw;
@@ -211,14 +219,31 @@ export function optimize(t: OptimizerTargets): OptimizerResult {
   const ranked = [...best.values()].flat().sort((a, b) => b.score - a.score);
   const candidates: Candidate[] = [];
   const families = new Set<string>();
-  for (const r of ranked) {
-    if (candidates.length >= 5) break;
-    const key = `${r.d}|${r.s}`;
-    if (families.has(key)) continue;
-    const c = toCandidate(r, t);
-    if (!c) continue;
-    families.add(key);
-    candidates.push(c);
+  const meetsRange = (c: Candidate) => c.range >= t.minRange;
+  if (t.mode === 'range') {
+    // Simulate a wider shortlist, then order by real best range.
+    const pool = ranked
+      .slice(0, RANGE_POOL)
+      .map((r) => toCandidate(r, t))
+      .filter((c): c is Candidate => c !== null && meetsRange(c))
+      .sort((a, b) => b.range - a.range);
+    for (const c of pool) {
+      if (candidates.length >= 5) break;
+      const key = `${c.config.prop.diameter}|${c.config.battery.s}`;
+      if (families.has(key)) continue;
+      families.add(key);
+      candidates.push({ ...c, score: c.range });
+    }
+  } else {
+    for (const r of ranked) {
+      if (candidates.length >= 5) break;
+      const key = `${r.d}|${r.s}`;
+      if (families.has(key)) continue;
+      const c = toCandidate(r, t);
+      if (!c || !meetsRange(c)) continue;
+      families.add(key);
+      candidates.push(c);
+    }
   }
   return { candidates, evaluated, feasible, elapsedMs: performance.now() - start };
 }
@@ -269,6 +294,8 @@ function toCandidate(r: Raw, t: OptimizerTargets): Candidate | null {
     motorTempMax: res.motorTempMax,
     liftCapacity: Math.max(0, res.max.totalThrust / t.minThrustRatio - res.auw),
     meetsFlightTime: res.hoverTime >= t.flightTime,
+    range: res.range?.distance ?? 0,
+    rangeSpeed: res.range?.speed ?? 0,
   };
 }
 
