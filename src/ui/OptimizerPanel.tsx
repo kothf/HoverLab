@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DEFAULT_TARGETS, type OptimizerMode, type OptimizerResult, type OptimizerTargets } from '../engine/optimizer';
-import { CHEMISTRIES } from '../engine/physics';
-import type { Chemistry, Config } from '../engine/types';
+import { CHEMISTRIES, LAYOUTS } from '../engine/physics';
+import type { Chemistry, Config, Results } from '../engine/types';
 import { frameClass, maxPropForWheelbase, wheelbaseMm } from '../lib/frame';
 import { fmt, fmtNum, fmtThrust } from '../lib/units';
 import { optEngine } from '../worker/engineClient';
@@ -11,12 +11,28 @@ import { Icon } from './Icons';
 
 interface Props {
   config: Config;
+  results: Results | null;
   onApply: (c: Config) => void;
+}
+
+/** Fields the optimizer takes from the calculator build; goals and limits stay the user's. */
+function buildFields(c: Config): Partial<OptimizerTargets> {
+  return {
+    layout: c.frame.layout,
+    chemistry: c.battery.chemistry,
+    frameWeight: c.frame.weight,
+    payload: c.frame.payload,
+    maxPropIn: c.frame.maxPropIn,
+    accessoryCurrent: c.frame.accessoryCurrent,
+    elevation: c.env.elevation,
+    temperature: c.env.temperature,
+  };
 }
 
 function targetsFrom(c: Config): OptimizerTargets {
   return {
     ...DEFAULT_TARGETS,
+    ...buildFields(c),
     layout: c.frame.layout,
     chemistry: c.battery.chemistry,
     frameWeight: c.frame.weight,
@@ -29,13 +45,19 @@ function targetsFrom(c: Config): OptimizerTargets {
   };
 }
 
-export function OptimizerPanel({ config, onApply }: Props) {
+export function OptimizerPanel({ config, results, onApply }: Props) {
   const system = useUnits();
   const [t, setT] = useState<OptimizerTargets>(() => targetsFrom(config));
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<OptimizerResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const set = (patch: Partial<OptimizerTargets>) => setT((x) => ({ ...x, ...patch }));
+
+  // Follow the calculator: whenever the build changes, take its frame, payload, battery chemistry
+  // and environment, and make sure its cell count is inside the searched range.
+  useEffect(() => {
+    setT((x) => ({ ...x, ...buildFields(config), minCells: Math.min(x.minCells, config.battery.s), maxCells: Math.max(x.maxCells, config.battery.s) }));
+  }, [config]);
 
   const run = async () => {
     setBusy(true);
@@ -56,6 +78,7 @@ export function OptimizerPanel({ config, onApply }: Props) {
         <Icon name="optimizer" /> Design optimizer
       </h2>
       <p className="muted small">Set your goal and limits; the optimizer searches props, cell count, motor size, Kv and battery and returns the best clean designs. Apply one to open it in the calculator.</p>
+      <BuildSummary config={config} results={results} />
       <div className="grid2">
         <SelectField<OptimizerMode>
           label="Objective"
@@ -94,8 +117,8 @@ export function OptimizerPanel({ config, onApply }: Props) {
         <button className="btn primary wide" onClick={run} disabled={busy}>
           {busy ? 'Optimizing…' : 'Run automatic design optimizer'}
         </button>
-        <button className="btn small ghost" onClick={() => setT(targetsFrom(config))} title="Copy frame, payload and environment from the current configuration">
-          Use current frame
+        <button className="btn small ghost" onClick={() => setT(targetsFrom(config))} title="Reset goals and limits to defaults, keeping the calculator build">
+          Reset
         </button>
       </div>
       {error && <p className="error-text">{error}</p>}
@@ -136,6 +159,34 @@ export function OptimizerPanel({ config, onApply }: Props) {
         </div>
       )}
       </div>
+    </div>
+  );
+}
+
+/** The calculator build the optimizer starts from, so both tabs show the same parameters. */
+function BuildSummary({ config: c, results: r }: { config: Config; results: Results | null }) {
+  const system = useUnits();
+  const b = c.battery;
+  const rows: [string, string][] = [
+    ['Frame', `${c.frame.name ?? frameClass(c.frame.maxPropIn, c.frame.layout)} · ${LAYOUTS[c.frame.layout].label} · ${Math.round(wheelbaseMm(c.frame.maxPropIn, c.frame.layout))} mm`],
+    ['Weight', `${fmt(system, 'mass', c.frame.weight)} frame + ${fmt(system, 'mass', c.frame.payload)} payload`],
+    ['Battery', `${b.name ? `${b.name} · ` : ''}${CHEMISTRIES[b.chemistry].label} ${b.s}S${b.p}P ${fmtNum(b.capacity * b.p)} mAh`],
+    ['Motor', `${c.motor.name ?? 'Custom'} · ${c.motor.kv} KV`],
+    ['Prop', `${c.prop.name ?? 'Custom'} · ${c.prop.diameter}×${c.prop.pitch}×${c.prop.blades}`],
+  ];
+  if (r) rows.push(['Now', `${r.hover ? `hover ${fmtNum(r.hoverTime, 1)} min` : 'cannot hover'} · T/W ${fmtNum(r.thrustToWeight, 2)} · AUW ${fmt(system, 'mass', r.auw)}${r.range ? ` · range ${fmt(system, 'distance', r.range.distance)}` : ''}`]);
+  return (
+    <div className="build-summary">
+      <h4>From the calculator</h4>
+      <dl>
+        {rows.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="muted small">Frame, payload, battery chemistry and environment below follow the calculator automatically.</p>
     </div>
   );
 }

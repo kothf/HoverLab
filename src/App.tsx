@@ -158,19 +158,18 @@ export default function App() {
           onLibrary={() => setLibraryOpen({ kind: 'motor', model: null })}
           onPrefs={setPrefs}
         />
-        {view === 'optimizer' && (
-          <main className="optimizer-view">
-            <OptimizerPanel
-              config={config}
-              onApply={(c) => {
-                load(c);
-                setView('calc');
-                history.replaceState(null, '', location.pathname + location.search);
-                notify(`Applied ${c.name}`);
-              }}
-            />
-          </main>
-        )}
+        <main className="optimizer-view" hidden={view !== 'optimizer'}>
+          <OptimizerPanel
+            config={config}
+            results={results}
+            onApply={(c) => {
+              load(c);
+              setView('calc');
+              history.replaceState(null, '', location.pathname + location.search);
+              notify(`Applied ${c.name}`);
+            }}
+          />
+        </main>
         <main className="workspace" hidden={view !== 'calc'}>
           <aside className="left">
             <ConfigPanel config={config} library={library} auw={results?.auw ?? null} onChange={setConfig} onDefine={(kind, query) => setLibraryOpen({ kind, model: query })} />
