@@ -7,13 +7,12 @@ import { wheelbaseMm } from '../lib/frame';
 
 const SIZE = 340;
 const C = SIZE / 2;
-const MARGIN = 26; // room for the scale bar
+const MARGIN = 28; // room for the dimension lines
 const IN = 25.4;
 
 // The view snaps to these spans (mm) so a bigger frame or prop visibly grows within a size class
 // instead of being re-fitted to the same size every time.
 const SPANS = [100, 160, 250, 400, 600, 900, 1300, 1900, 2800, 4000];
-const NICE_BARS = [10, 20, 50, 100, 200, 500, 1000];
 
 const tone = (s: Severity | undefined) => (s === 'danger' ? 'var(--danger)' : s === 'warn' ? 'var(--warn)' : 'var(--good)');
 
@@ -32,12 +31,25 @@ export function sketchGeometry(c: Config) {
   const payloadSide = c.frame.payload > 0 ? Math.cbrt((c.frame.payload / 1.2) * 1000) : 0;
   const plate = Math.max(arm * 0.42, batH * 1.8, 24);
   const extent = arm + Math.max(propR, frameR);
-  return { arms, coax, arm, propR, frameR, motorD, batL: batH * 3, batW: batH * 1.6, payloadSide, plate, wheelbase: arm * 2, extent };
-}
 
-function niceBar(mmPerPx: number) {
-  const target = mmPerPx * 70;
-  return NICE_BARS.reduce((best, b) => (Math.abs(b - target) < Math.abs(best - target) ? b : best), NICE_BARS[0]);
+  // Motor positions (mm from centre, y towards the rear) and the overall footprint with props fitted.
+  const offset = c.frame.layout === 'quadP' ? 0 : Math.PI / arms;
+  const motors = Array.from({ length: arms }, (_, i) => {
+    const a = -Math.PI / 2 + offset + (i * 2 * Math.PI) / arms;
+    return { x: Math.cos(a) * arm, y: Math.sin(a) * arm, cw: i % 2 === 0 };
+  });
+  const reach = Math.max(propR, motorD / 2);
+  const bounds = {
+    minX: Math.min(-plate / 2, ...motors.map((m) => m.x - reach)),
+    maxX: Math.max(plate / 2, ...motors.map((m) => m.x + reach)),
+    minY: Math.min(-plate / 2, ...motors.map((m) => m.y - reach)),
+    maxY: Math.max(plate / 2 + (payloadSide ? payloadSide * 0.8 : 0), ...motors.map((m) => m.y + reach)),
+  };
+  return {
+    arms, coax, arm, propR, frameR, motorD, batL: batH * 3, batW: batH * 1.6, payloadSide, plate, wheelbase: arm * 2, extent, motors, bounds,
+    width: bounds.maxX - bounds.minX,
+    length: bounds.maxY - bounds.minY,
+  };
 }
 
 const lengthLabel = (system: UnitSystem, mm: number) =>
@@ -59,15 +71,11 @@ export function DroneSketch({ config: c, results: r }: Props) {
   const g = sketchGeometry(c);
   const span = SPANS.find((s) => s >= g.extent * 2 * 1.04) ?? g.extent * 2 * 1.04;
   const k = (SIZE - MARGIN * 2) / span; // px per mm
-  const bar = niceBar(1 / k);
-
-  const plus = c.frame.layout === 'quadP';
-  const offset = plus ? 0 : Math.PI / g.arms;
-  const motors = Array.from({ length: g.arms }, (_, i) => {
-    const a = -Math.PI / 2 + offset + (i * 2 * Math.PI) / g.arms;
-    return { x: C + Math.cos(a) * g.arm * k, y: C - 6 + Math.sin(a) * g.arm * k, cw: i % 2 === 0 };
-  });
-  const cy = C - 6;
+  const cy = C;
+  const motors = g.motors.map((m) => ({ x: C + m.x * k, y: cy + m.y * k, cw: m.cw }));
+  const box = { x0: C + g.bounds.minX * k, x1: C + g.bounds.maxX * k, y0: cy + g.bounds.minY * k, y1: cy + g.bounds.maxY * k };
+  const dimTop = Math.max(10, box.y0 - 12);
+  const dimRight = Math.min(SIZE - 10, box.x1 + 12);
 
   const status = (key: string) => r?.status.find((s) => s.key === key)?.severity;
   const motorSev: Severity =
@@ -116,12 +124,31 @@ export function DroneSketch({ config: c, results: r }: Props) {
           </g>
         ))}
         <path d={`M ${C} ${cy - (g.plate * k) / 2 - 3} l -6 -9 h 12 z`} className="sketch-front" />
-        <g className="sketch-scale">
-          <line x1={MARGIN} y1={SIZE - 12} x2={MARGIN + bar * k} y2={SIZE - 12} />
-          <line x1={MARGIN} y1={SIZE - 16} x2={MARGIN} y2={SIZE - 8} />
-          <line x1={MARGIN + bar * k} y1={SIZE - 16} x2={MARGIN + bar * k} y2={SIZE - 8} />
-          <text x={MARGIN + bar * k + 6} y={SIZE - 8}>{lengthLabel(system, bar)}</text>
+        <g className="sketch-dim">
+          <line x1={box.x0} y1={box.y0} x2={box.x0} y2={dimTop - 4} className="ext" />
+          <line x1={box.x1} y1={box.y0} x2={box.x1} y2={dimTop - 4} className="ext" />
+          <line x1={box.x0} y1={dimTop} x2={box.x1} y2={dimTop} markerStart="url(#dim-arrow)" markerEnd="url(#dim-arrow)" />
+          <text x={(box.x0 + box.x1) / 2} y={dimTop - 4} textAnchor="middle" className="dim-label">
+            {lengthLabel(system, g.width)}
+          </text>
+          <line x1={box.x1} y1={box.y0} x2={dimRight + 4} y2={box.y0} className="ext" />
+          <line x1={box.x1} y1={box.y1} x2={dimRight + 4} y2={box.y1} className="ext" />
+          <line x1={dimRight} y1={box.y0} x2={dimRight} y2={box.y1} markerStart="url(#dim-arrow)" markerEnd="url(#dim-arrow)" />
+          <text
+            x={dimRight + 4}
+            y={(box.y0 + box.y1) / 2}
+            textAnchor="middle"
+            transform={`rotate(90 ${dimRight + 4} ${(box.y0 + box.y1) / 2})`}
+            className="dim-label"
+          >
+            {lengthLabel(system, g.length)}
+          </text>
         </g>
+        <defs>
+          <marker id="dim-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 1L10 5L0 9z" className="dim-arrowhead" />
+          </marker>
+        </defs>
       </svg>
       <div className="sketch-caption">
         <strong>{info.label} · wheelbase {lengthLabel(system, g.wheelbase)}</strong>
@@ -134,6 +161,9 @@ export function DroneSketch({ config: c, results: r }: Props) {
             {r.hover ? ` · hover ${fmtNum(r.hover.rpm)} rpm` : ' · cannot hover'}
           </span>
         )}
+        <span>
+          Overall {lengthLabel(system, g.width)} wide × {lengthLabel(system, g.length)} long, props included
+        </span>
         <span className="sketch-legend">Dashed ring: largest prop the frame fits. Drawn to scale.</span>
       </div>
     </div>

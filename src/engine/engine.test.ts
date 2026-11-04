@@ -281,6 +281,9 @@ describe('drone sketch geometry', () => {
     const bigFrame = sketchGeometry({ ...five, frame: { ...five.frame, maxPropIn: 7 } });
     expect(bigFrame.wheelbase).toBeGreaterThan(base.wheelbase * 1.3);
     expect(sketchGeometry({ ...five, motor: { ...five.motor, weight: 150 } }).motorD).toBeGreaterThan(base.motorD);
+    // Overall footprint of a quad X with props fitted: wheelbase/√2 + one prop diameter per side.
+    expect(base.width).toBeCloseTo(base.wheelbase / Math.SQRT2 + 2 * base.propR, 0);
+    expect(base.length).toBeGreaterThanOrEqual(base.width - 1e-9);
   });
 });
 
