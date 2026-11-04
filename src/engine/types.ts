@@ -95,9 +95,16 @@ export interface OperatingPoint {
 
 export type Severity = 'ok' | 'warn' | 'danger';
 
-export interface Warning {
+/** A message translated where it is shown: an English template with {placeholders} and its values. */
+export interface Msg {
+  tpl: string;
+  vars?: Record<string, string | number>;
+}
+
+export interface Warning extends Msg {
   code: string;
   severity: Exclude<Severity, 'ok'>;
+  /** The message in English. */
   message: string;
 }
 
@@ -170,4 +177,4 @@ export interface Results {
   status: StatusIndicator[];
 }
 
-export type SimulationOutcome = { ok: true; results: Results } | { ok: false; errors: string[] };
+export type SimulationOutcome = { ok: true; results: Results } | { ok: false; errors: string[]; errorMsgs: Msg[] };

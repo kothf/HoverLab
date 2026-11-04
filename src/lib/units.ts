@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 export type UnitSystem = 'metric' | 'imperial';
 
 export type Quantity = 'mass' | 'thrust' | 'length' | 'altitude' | 'temp' | 'speed' | 'distance' | 'climb';
@@ -34,7 +36,8 @@ const IMPERIAL: Record<Quantity, UnitDef> = {
 };
 
 export function unit(system: UnitSystem, q: Quantity): UnitDef {
-  return (system === 'metric' ? METRIC : IMPERIAL)[q];
+  const def = (system === 'metric' ? METRIC : IMPERIAL)[q];
+  return { ...def, label: t(def.label) };
 }
 
 export function fmtNum(v: number, digits = 0): string {
@@ -50,5 +53,5 @@ export function fmt(system: UnitSystem, q: Quantity, v: number, digits?: number)
 /** Total thrust is easier to read in kg / lbf once it gets large. */
 export function fmtThrust(system: UnitSystem, grams: number): string {
   if (system === 'imperial') return fmt(system, 'thrust', grams);
-  return grams >= 10000 ? `${fmtNum(grams / 1000, 2)} kg` : `${fmtNum(grams)} g`;
+  return grams >= 10000 ? `${fmtNum(grams / 1000, 2)} ${t('kg')}` : `${fmtNum(grams)} ${t('g')}`;
 }

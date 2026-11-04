@@ -26,6 +26,8 @@ import { OptimizerPanel } from './ui/OptimizerPanel';
 import { ResultsPanel } from './ui/ResultsPanel';
 import { TopBar, type View } from './ui/TopBar';
 import { simEngine } from './worker/engineClient';
+import { LangContext, detectLang, dirOf, isLang, setLang, t, tName, type Lang } from './i18n';
+import type { Msg } from './engine/types';
 
 const SNAPSHOT_COLORS = ['var(--series-2)', 'var(--series-3)', 'var(--series-4)'];
 
@@ -36,8 +38,15 @@ function initialConfig(): Config {
 export default function App() {
   const [config, setConfig] = useState<Config>(initialConfig);
   const [results, setResults] = useState<Results | null>(null);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [prefs, setPrefs] = useState<Prefs>(loadPrefs);
+  const [errors, setErrors] = useState<Msg[]>([]);
+  const [prefs, setPrefs] = useState<Prefs>(() => {
+    const p = loadPrefs();
+    const q = new URLSearchParams(location.search).get('lang');
+    return { ...p, lang: isLang(q) ? q : (p.lang ?? detectLang()) };
+  });
+  const lang: Lang = prefs.lang ?? 'en';
+  // Set before children render so plain functions (insights, units) translate too.
+  setLang(lang);
   const [saved, setSaved] = useState<Config[]>(loadSavedConfigs);
   const [custom, setCustom] = useState<Library>(loadCustomLibrary);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
@@ -59,7 +68,7 @@ export default function App() {
         setErrors([]);
       } else {
         setResults(null);
-        setErrors(out.errors);
+        setErrors(out.errorMsgs);
       }
     });
     storeCurrent(config);
@@ -67,6 +76,9 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = prefs.theme;
+    document.documentElement.lang = lang;
+    document.documentElement.dir = dirOf(lang);
+    document.title = t('HoverLab — quadcopter calculator');
     storePrefs(prefs);
   }, [prefs]);
 
@@ -82,13 +94,13 @@ export default function App() {
   const load = (c: Config) => setConfig(structuredClone(c));
 
   const save = () => {
-    const name = window.prompt('Save configuration as', config.name)?.trim();
+    const name = window.prompt(t('Save configuration as'), config.name)?.trim();
     if (!name) return;
     const next = [{ ...config, name }, ...saved.filter((s) => s.name !== name)];
     setSaved(next);
     storeSavedConfigs(next);
     setConfig({ ...config, name });
-    notify(`Saved “${name}”`);
+    notify(t('Saved “{name}”', { name }));
   };
 
   const deleteSaved = (name: string) => {
@@ -107,8 +119,8 @@ export default function App() {
     }
     if (c && c.motor && c.prop && c.battery) {
       load(c);
-      notify(`Loaded ${file.name}`);
-    } else notify('That file is not a HoverLab configuration');
+      notify(t('Loaded {name}', { name: file.name }));
+    } else notify(t('That file is not a HoverLab configuration'));
   };
 
   const exportAs = async (kind: 'csv' | 'pdf' | 'json' | 'link') => {
@@ -119,9 +131,9 @@ export default function App() {
       const url = shareUrl(config);
       try {
         await navigator.clipboard.writeText(url);
-        notify('Share link copied to clipboard');
+        notify(t('Share link copied to clipboard'));
       } catch {
-        window.prompt('Copy this link', url);
+        window.prompt(t('Copy this link'), url);
       }
     }
   };
@@ -130,7 +142,7 @@ export default function App() {
     if (!results || snapshots.length >= 3) return;
     const used = new Set(snapshots.map((s) => s.color));
     const color = SNAPSHOT_COLORS.find((c) => !used.has(c)) ?? SNAPSHOT_COLORS[0];
-    setSnapshots([...snapshots, { id: `s${Date.now()}`, name: config.name || `Config ${snapshots.length + 1}`, color, results }]);
+    setSnapshots([...snapshots, { id: `s${Date.now()}`, name: config.name ? tName(config.name) : t('Config {n}', { n: snapshots.length + 1 }), color, results }]);
   };
 
   const updateCustom = (l: Library) => {
@@ -139,6 +151,7 @@ export default function App() {
   };
 
   return (
+    <LangContext.Provider value={lang}>
     <UnitsContext.Provider value={prefs.units}>
       <div className="app">
         <TopBar
@@ -169,7 +182,7 @@ export default function App() {
               load(c);
               setView('calc');
               history.replaceState(null, '', location.pathname + location.search);
-              notify(`Applied ${c.name}`);
+              notify(t('Applied {name}', { name: tName(c.name) }));
             }}
           />
         </main>
@@ -179,8 +192,8 @@ export default function App() {
           </aside>
           <section className="right">
             <div className="print-only print-header">
-              <h1>HoverLab report — {config.name}</h1>
-              <p>Generated {new Date().toLocaleString()}</p>
+              <h1>{t('HoverLab report — {name}', { name: tName(config.name) })}</h1>
+              <p>{t('Generated {date}', { date: new Date().toLocaleString(lang === 'en' ? undefined : lang) })}</p>
             </div>
             <ResultsPanel
               config={config}
@@ -193,7 +206,7 @@ export default function App() {
           </section>
         </main>
         <footer className="footer muted small">
-          Estimates within typical ±10–15 % of bench data when motor and prop constants are accurate. Always verify against manufacturer data before flight.
+          {t('Estimates within typical ±10–15 % of bench data when motor and prop constants are accurate. Always verify against manufacturer data before flight.')}
         </footer>
         {libraryOpen && (
           <LibraryDialog
@@ -205,7 +218,7 @@ export default function App() {
             onChangeCustom={updateCustom}
             onUse={(kind, part) => {
               setConfig((c) => applyPart(c, kind, part));
-              notify(`Using ${part.brand} ${part.model}`);
+              notify(t('Using {name}', { name: `${part.brand} ${part.model}` }));
             }}
             onClose={() => setLibraryOpen(null)}
           />
@@ -214,5 +227,6 @@ export default function App() {
         {toast && <div className="toast" role="status">{toast}</div>}
       </div>
     </UnitsContext.Provider>
+    </LangContext.Provider>
   );
 }

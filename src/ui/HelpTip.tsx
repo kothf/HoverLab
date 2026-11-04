@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
-import { HELP } from './help';
+import { helpText, useT } from '../i18n';
 
 const WIDTH = 280;
 const GAP = 6;
@@ -9,7 +9,8 @@ const GAP = 6;
  * fixed-positioned and clamped to the viewport so scrolling panels never clip it.
  */
 export function HelpTip({ topic, text }: { topic?: string; text?: string }) {
-  const body = text ?? (topic ? HELP[topic] : undefined);
+  const t = useT();
+  const body = text ?? (topic ? helpText(topic) : undefined);
   const [pinned, setPinned] = useState(false);
   const [hover, setHover] = useState(false);
   const [style, setStyle] = useState<CSSProperties>({});
@@ -52,7 +53,7 @@ export function HelpTip({ topic, text }: { topic?: string; text?: string }) {
         ref={btn}
         type="button"
         className="help-btn"
-        aria-label={`Help: ${topic ?? 'details'}`}
+        aria-label={t('Help: {topic}', { topic: topic ?? 'details' })}
         aria-describedby={open ? id : undefined}
         aria-expanded={open}
         onFocus={() => setHover(true)}
