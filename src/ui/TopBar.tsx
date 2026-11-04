@@ -4,7 +4,11 @@ import type { Config } from '../engine/types';
 import type { Prefs } from '../lib/storage';
 import { Icon } from './Icons';
 
+export type View = 'calc' | 'optimizer';
+
 interface Props {
+  view: View;
+  onView: (v: View) => void;
   config: Config;
   saved: Config[];
   prefs: Prefs;
@@ -22,7 +26,7 @@ function closeMenu(el: HTMLElement) {
   el.closest('details')?.removeAttribute('open');
 }
 
-export function TopBar({ config, saved, prefs, canExport, onLoad, onSave, onDeleteSaved, onImportConfig, onExport, onLibrary, onPrefs }: Props) {
+export function TopBar({ view, onView, config, saved, prefs, canExport, onLoad, onSave, onDeleteSaved, onImportConfig, onExport, onLibrary, onPrefs }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   return (
     <header className="topbar">
@@ -31,6 +35,14 @@ export function TopBar({ config, saved, prefs, canExport, onLoad, onSave, onDele
         <span>HoverLab</span>
         <span className="app-version" title="HoverLab version">v{__APP_VERSION__}</span>
         <span className="config-name" title="Current configuration">{config.name}</span>
+      </div>
+      <div className="view-tabs" role="tablist" aria-label="Mode">
+        <button role="tab" aria-selected={view === 'calc'} className={view === 'calc' ? 'active' : ''} onClick={() => onView('calc')}>
+          <Icon name="frame" size={16} /> Calculator
+        </button>
+        <button role="tab" aria-selected={view === 'optimizer'} className={view === 'optimizer' ? 'active' : ''} onClick={() => onView('optimizer')}>
+          <Icon name="optimizer" size={16} /> Design optimizer
+        </button>
       </div>
       <nav className="actions">
         <details className="menu">

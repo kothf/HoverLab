@@ -6,7 +6,8 @@ import { frameClass, maxPropForWheelbase, wheelbaseMm } from '../lib/frame';
 import { fmt, fmtNum, fmtThrust } from '../lib/units';
 import { optEngine } from '../worker/engineClient';
 import { useUnits } from './context';
-import { NumberField, Section, SelectField } from './fields';
+import { NumberField, SelectField } from './fields';
+import { Icon } from './Icons';
 
 interface Props {
   config: Config;
@@ -49,7 +50,12 @@ export function OptimizerPanel({ config, onApply }: Props) {
   };
 
   return (
-    <Section icon="optimizer" title="Inverse design optimizer" summary="auto-select Kv, prop, cells, battery" defaultOpen={false}>
+    <div className="opt-page">
+      <div className="card opt-form">
+      <h2 className="opt-title">
+        <Icon name="optimizer" /> Design optimizer
+      </h2>
+      <p className="muted small">Set your goal and limits; the optimizer searches props, cell count, motor size, Kv and battery and returns the best clean designs. Apply one to open it in the calculator.</p>
       <div className="grid2">
         <SelectField<OptimizerMode>
           label="Objective"
@@ -93,6 +99,9 @@ export function OptimizerPanel({ config, onApply }: Props) {
         </button>
       </div>
       {error && <p className="error-text">{error}</p>}
+      </div>
+      <div className="opt-out">
+      {!result && !busy && <div className="card muted opt-empty">Results appear here. Press <strong>Run automatic design optimizer</strong> to start.</div>}
       {result && (
         <div className="opt-results">
           <p className="muted small">
@@ -126,6 +135,7 @@ export function OptimizerPanel({ config, onApply }: Props) {
           <p className="muted small">Optimizer parts are generic: motor resistance and no-load current are scaled from mass and Kv. Pick real parts with similar specs from the library afterwards.</p>
         </div>
       )}
-    </Section>
+      </div>
+    </div>
   );
 }

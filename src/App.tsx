@@ -23,7 +23,7 @@ import { UnitsContext } from './ui/context';
 import { LibraryDialog } from './ui/LibraryDialog';
 import { OptimizerPanel } from './ui/OptimizerPanel';
 import { ResultsPanel } from './ui/ResultsPanel';
-import { TopBar } from './ui/TopBar';
+import { TopBar, type View } from './ui/TopBar';
 import { simEngine } from './worker/engineClient';
 
 const SNAPSHOT_COLORS = ['var(--series-2)', 'var(--series-3)', 'var(--series-4)'];
@@ -43,6 +43,7 @@ export default function App() {
   const [libraryOpen, setLibraryOpen] = useState<{ kind: ComponentKind; model: string | null } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const reqRef = useRef(0);
+  const [view, setView] = useState<View>(() => (location.hash === '#optimizer' ? 'optimizer' : 'calc'));
 
   const library = useMemo(() => mergedLibrary(custom), [custom]);
 
@@ -139,6 +140,12 @@ export default function App() {
     <UnitsContext.Provider value={prefs.units}>
       <div className="app">
         <TopBar
+          view={view}
+          onView={(v) => {
+            setView(v);
+            history.replaceState(null, '', v === 'optimizer' ? '#optimizer' : location.pathname + location.search);
+            window.scrollTo(0, 0);
+          }}
           config={config}
           saved={saved}
           prefs={prefs}
@@ -151,16 +158,22 @@ export default function App() {
           onLibrary={() => setLibraryOpen({ kind: 'motor', model: null })}
           onPrefs={setPrefs}
         />
-        <main className="workspace">
-          <aside className="left">
-            <ConfigPanel config={config} library={library} auw={results?.auw ?? null} onChange={setConfig} onDefine={(kind, query) => setLibraryOpen({ kind, model: query })} />
+        {view === 'optimizer' && (
+          <main className="optimizer-view">
             <OptimizerPanel
               config={config}
               onApply={(c) => {
                 load(c);
+                setView('calc');
+                history.replaceState(null, '', location.pathname + location.search);
                 notify(`Applied ${c.name}`);
               }}
             />
+          </main>
+        )}
+        <main className="workspace" hidden={view !== 'calc'}>
+          <aside className="left">
+            <ConfigPanel config={config} library={library} auw={results?.auw ?? null} onChange={setConfig} onDefine={(kind, query) => setLibraryOpen({ kind, model: query })} />
           </aside>
           <section className="right">
             <div className="print-only print-header">
