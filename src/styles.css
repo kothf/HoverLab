@@ -341,3 +341,12 @@ th .help, dt .help { margin-left: 5px; }
 .opt-out .opt-results > p { grid-column: 1 / -1; margin: 0; }
 .opt-empty { padding: 28px; text-align: center; }
 @media (max-width: 640px) { .view-tabs { order: 3; width: 100%; } .view-tabs button { flex: 1; justify-content: center; } }
+
+.optimizer-view[hidden] { display: none; }
+.build-summary { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--panel-2); }
+.build-summary h4 { margin: 0 0 6px; }
+.build-summary dl { margin: 0; display: grid; gap: 3px; font-size: 13px; }
+.build-summary dl > div { display: grid; grid-template-columns: 70px 1fr; gap: 8px; }
+.build-summary dt { color: var(--muted); }
+.build-summary dd { margin: 0; }
+.build-summary p { margin: 6px 0 0; }
