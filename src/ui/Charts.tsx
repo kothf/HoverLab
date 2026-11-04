@@ -28,7 +28,16 @@ const C = {
   d: 'var(--series-4)',
 };
 
+/** Short, readable tick text: whole numbers stay whole, fractions keep at most 3 significant digits. */
+export function tickText(v: number, suffix = ''): string {
+  if (!Number.isFinite(v)) return '';
+  const n = Math.abs(v) >= 100 || Number.isInteger(v) ? Math.round(v) : +v.toPrecision(Math.abs(v) >= 10 ? 3 : 2);
+  return `${n.toLocaleString('en-US')}${suffix}`;
+}
+
 const axisProps = { stroke: 'var(--muted)', tick: { fill: 'var(--muted)', fontSize: 12 }, tickLine: false };
+const legendProps = { verticalAlign: 'top' as const, wrapperStyle: { paddingBottom: 8, lineHeight: '20px' } };
+const PCT_TICKS = [0, 20, 40, 60, 80, 100];
 const tooltipStyle = { background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)' };
 
 export function Charts({ results: r, snapshots }: { results: Results; snapshots: Snapshot[] }) {
@@ -65,9 +74,9 @@ export function Charts({ results: r, snapshots }: { results: Results; snapshots:
             <LineChart data={thrustData} margin={{ top: 10, right: 16, bottom: 18, left: 0 }}>
               <CartesianGrid stroke="var(--grid)" />
               <XAxis dataKey="throttle" {...axisProps} unit="%" label={{ value: 'Throttle', position: 'insideBottom', offset: -10, fill: 'var(--muted)' }} />
-              <YAxis {...axisProps} unit={` ${thrustLabel}`} width={70} />
+              <YAxis {...axisProps} tickFormatter={(v: number) => tickText(v, ` ${thrustLabel}`)} width={70} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v.toFixed(2)} ${thrustLabel}`} labelFormatter={(l) => `Throttle ${l}%`} />
-              <Legend verticalAlign="top" height={28} />
+              <Legend {...legendProps} />
               <ReferenceLine y={hoverLine} stroke="var(--warn)" strokeDasharray="4 4" label={{ value: 'AUW', fill: 'var(--warn)', fontSize: 12, position: 'insideTopLeft' }} />
               <Line type="monotone" dataKey="current" name="Current config" stroke={C.a} strokeWidth={2.5} dot={false} />
               {snapshots.map((s) => (
@@ -78,10 +87,10 @@ export function Charts({ results: r, snapshots }: { results: Results; snapshots:
             <LineChart data={r.curves} margin={{ top: 10, right: 0, bottom: 18, left: 0 }}>
               <CartesianGrid stroke="var(--grid)" />
               <XAxis dataKey="throttlePct" {...axisProps} unit="%" label={{ value: 'Throttle', position: 'insideBottom', offset: -10, fill: 'var(--muted)' }} />
-              <YAxis yAxisId="a" {...axisProps} unit=" A" width={60} />
-              <YAxis yAxisId="w" orientation="right" {...axisProps} unit=" W" width={70} />
+              <YAxis yAxisId="a" {...axisProps} tickFormatter={(v: number) => tickText(v, ' A')} width={60} />
+              <YAxis yAxisId="w" orientation="right" {...axisProps} tickFormatter={(v: number) => tickText(v, ' W')} width={70} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n) => (n === 'Power' ? `${v.toFixed(0)} W` : `${v.toFixed(1)} A`)} labelFormatter={(l) => `Throttle ${l}%`} />
-              <Legend verticalAlign="top" height={28} />
+              <Legend {...legendProps} />
               <Line yAxisId="a" type="monotone" dataKey="batteryCurrent" name="Battery current" stroke={C.a} strokeWidth={2.5} dot={false} />
               <Line yAxisId="a" type="monotone" dataKey="motorCurrent" name="Current per motor" stroke={C.c} strokeWidth={2} dot={false} />
               <Line yAxisId="w" type="monotone" dataKey="electricPower" name="Power" stroke={C.b} strokeWidth={2} dot={false} />
@@ -93,10 +102,10 @@ export function Charts({ results: r, snapshots }: { results: Results; snapshots:
             >
               <CartesianGrid stroke="var(--grid)" />
               <XAxis dataKey="t" {...axisProps} unit="%" label={{ value: 'Throttle', position: 'insideBottom', offset: -10, fill: 'var(--muted)' }} />
-              <YAxis yAxisId="e" {...axisProps} unit="%" domain={[40, 100]} width={55} />
-              <YAxis yAxisId="g" orientation="right" {...axisProps} unit=" g/W" width={70} />
+              <YAxis yAxisId="e" {...axisProps} domain={[0, 100]} ticks={PCT_TICKS} allowDataOverflow tickFormatter={(v: number) => tickText(v, '%')} width={55} />
+              <YAxis yAxisId="g" orientation="right" {...axisProps} domain={[0, 'auto']} tickFormatter={(v: number) => tickText(v, ' g/W')} width={70} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n) => (n === 'Specific thrust' ? `${v.toFixed(2)} g/W` : `${v.toFixed(1)} %`)} labelFormatter={(l) => `Throttle ${l}%`} />
-              <Legend verticalAlign="top" height={28} />
+              <Legend {...legendProps} />
               <Line yAxisId="e" type="monotone" dataKey="motor" name="Motor" stroke={C.a} strokeWidth={2.5} dot={false} />
               <Line yAxisId="e" type="monotone" dataKey="esc" name="ESC" stroke={C.c} strokeWidth={2} dot={false} />
               <Line yAxisId="e" type="monotone" dataKey="total" name="Drive" stroke={C.d} strokeWidth={2} dot={false} />
@@ -106,7 +115,7 @@ export function Charts({ results: r, snapshots }: { results: Results; snapshots:
             <LineChart data={r.thermal.map((p) => ({ t: p.t, temp: +tu.toDisplay(p.temp).toFixed(1) }))} margin={{ top: 10, right: 16, bottom: 18, left: 0 }}>
               <CartesianGrid stroke="var(--grid)" />
               <XAxis dataKey="t" {...axisProps} unit=" s" label={{ value: 'Time at full throttle', position: 'insideBottom', offset: -10, fill: 'var(--muted)' }} />
-              <YAxis {...axisProps} unit={tu.label} width={60} />
+              <YAxis {...axisProps} tickFormatter={(v: number) => tickText(v, tu.label)} width={60} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} ${tu.label}`} labelFormatter={(l) => `${l} s at full throttle`} />
               <ReferenceLine y={+tu.toDisplay(MOTOR_TEMP_LIMIT).toFixed(0)} stroke="var(--danger)" strokeDasharray="4 4" label={{ value: 'Limit', fill: 'var(--danger)', fontSize: 12, position: 'insideTopLeft' }} />
               <Line type="monotone" dataKey="temp" name="Motor temperature" stroke={C.b} strokeWidth={2.5} dot={false} />
@@ -114,8 +123,8 @@ export function Charts({ results: r, snapshots }: { results: Results; snapshots:
           ) : (
             <LineChart data={r.payloadEnvelope.map((p) => ({ p: +mu.toDisplay(p.payload).toFixed(mu.digits), time: +p.hoverTime.toFixed(1) }))} margin={{ top: 10, right: 16, bottom: 18, left: 0 }}>
               <CartesianGrid stroke="var(--grid)" />
-              <XAxis dataKey="p" {...axisProps} unit={` ${mu.label}`} label={{ value: 'Extra payload', position: 'insideBottom', offset: -10, fill: 'var(--muted)' }} />
-              <YAxis {...axisProps} unit=" min" width={60} />
+              <XAxis dataKey="p" type="number" domain={[0, 'auto']} tickCount={6} {...axisProps} tickFormatter={(v: number) => tickText(v, ` ${mu.label}`)} label={{ value: 'Extra payload', position: 'insideBottom', offset: -10, fill: 'var(--muted)' }} />
+              <YAxis {...axisProps} domain={[0, 'auto']} tickFormatter={(v: number) => tickText(v, ' min')} width={60} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} min`} labelFormatter={(l) => `+${l} ${mu.label} payload`} />
               <Line type="monotone" dataKey="time" name="Hover time" stroke={C.a} strokeWidth={2.5} dot />
             </LineChart>
