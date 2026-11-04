@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import { DEFAULT_TARGETS, matchKv, optimize } from './optimizer';
 import { airDensity, estimateMotor, estimatePropCp, estimatePropCt, pressureAt, speedOfSound } from './physics';
 import { buildDrive, simulate, validateConfig } from './simulate';
-import { inducedVelocity, maxPoint, opAtThrottle, opAtThrust, opInFlight } from './solver';
+import { ESC_SWITCHING_LOSS, inducedVelocity, maxPoint, opAtThrottle, opAtThrust, opInFlight } from './solver';
 import type { Config, Results } from './types';
 
 // Reference 5" build (T-Motor 2207 1950KV, 5.1x4.66x3, 6S 1300) used for bench-range and edge-case tests.
@@ -114,12 +114,20 @@ describe('operating point solver', () => {
   });
   it('energy balances: shaft + losses = battery power', () => {
     const op = opAtThrottle(dr, 0.6);
-    const escLoss = op.motorCurrent ** 2 * dr.resc;
+    const escLoss = op.motorCurrent ** 2 * dr.resc + ESC_SWITCHING_LOSS * op.batteryVoltage * op.motorCurrent;
     const batteryLoss = op.batteryCurrent ** 2 * dr.rbat;
     const accessories = dr.iacc * op.batteryVoltage;
     const cellPower = dr.voc * op.batteryCurrent;
     const sum = dr.motors * (op.mechPowerPerMotor + op.motorLoss + escLoss) + batteryLoss + accessories;
     expect(sum / cellPower).toBeCloseTo(1, 3);
+  });
+  it('ESC efficiency is realistic: ~97 % at full throttle, lower at low throttle', () => {
+    const full = maxPoint(dr).escEfficiency;
+    const low = opAtThrottle(dr, 0.2).escEfficiency;
+    expect(full).toBeGreaterThan(0.95);
+    expect(full).toBeLessThan(0.99);
+    expect(low).toBeLessThan(full);
+    expect(low).toBeGreaterThan(0.85);
   });
   it('thrust, current and power rise monotonically with throttle', () => {
     const r = run(five);
