@@ -4,6 +4,7 @@ import type { Config, Results, Severity } from '../engine/types';
 import { fmt, fmtNum, type UnitSystem } from '../lib/units';
 import { useUnits } from './context';
 import { wheelbaseMm } from '../lib/frame';
+import { t, useT } from '../i18n';
 
 const SIZE = 340;
 const C = SIZE / 2;
@@ -53,7 +54,7 @@ export function sketchGeometry(c: Config) {
 }
 
 const lengthLabel = (system: UnitSystem, mm: number) =>
-  system === 'imperial' ? `${fmtNum(mm / IN, mm / IN < 10 ? 1 : 0)} in` : mm >= 1000 ? `${fmtNum(mm / 1000, 1)} m` : `${fmtNum(mm)} mm`;
+  system === 'imperial' ? `${fmtNum(mm / IN, mm / IN < 10 ? 1 : 0)} ${t('in')}` : mm >= 1000 ? `${fmtNum(mm / 1000, 1)} ${t('m')}` : `${fmtNum(mm)} ${t('mm')}`;
 
 interface Props {
   config: Config;
@@ -67,6 +68,7 @@ interface Props {
  */
 export function DroneSketch({ config: c, results: r }: Props) {
   const system = useUnits();
+  useT();
   const info = LAYOUTS[c.frame.layout];
   const g = sketchGeometry(c);
   const span = SPANS.find((s) => s >= g.extent * 2 * 1.04) ?? g.extent * 2 * 1.04;
@@ -105,7 +107,7 @@ export function DroneSketch({ config: c, results: r }: Props) {
 
   return (
     <div className="card sketch">
-      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={`Top view to scale: ${info.label}, wheelbase ${Math.round(g.wheelbase)} mm, ${c.prop.diameter} inch props`}>
+      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={t('Top view to scale: {layout}, wheelbase {wb} mm, {d} inch props', { layout: info.label, wb: Math.round(g.wheelbase), d: c.prop.diameter })}>
         {motors.map((m, i) => (
           <line key={`arm${i}`} x1={C} y1={cy} x2={m.x} y2={m.y} className="sketch-arm" strokeWidth={Math.max(3, g.motorD * k * 0.45)} />
         ))}
@@ -151,20 +153,20 @@ export function DroneSketch({ config: c, results: r }: Props) {
         </defs>
       </svg>
       <div className="sketch-caption">
-        <strong>{info.label} · wheelbase {lengthLabel(system, g.wheelbase)}</strong>
+        <strong>{t(info.label)} · {t('wheelbase {v}', { v: lengthLabel(system, g.wheelbase) })}</strong>
         <span>
-          {c.prop.diameter}″ props in a {c.frame.maxPropIn}″ frame · {c.motor.kv} KV · {c.battery.s}S {fmtNum(c.battery.capacity * c.battery.p)} mAh
+          {t('{d}″ props in a {f}″ frame', { d: c.prop.diameter, f: c.frame.maxPropIn })} · {c.motor.kv} KV · {c.battery.s}S {fmtNum(c.battery.capacity * c.battery.p)} {t('mAh')}
         </span>
         {r && (
           <span>
-            AUW {fmt(system, 'mass', r.auw)}
-            {r.hover ? ` · hover ${fmtNum(r.hover.rpm)} rpm` : ' · cannot hover'}
+            {t('AUW')} {fmt(system, 'mass', r.auw)}
+            {r.hover ? ` · ${t('hover {v} rpm', { v: fmtNum(r.hover.rpm) })}` : ` · ${t('cannot hover')}`}
           </span>
         )}
         <span>
-          Overall {lengthLabel(system, g.width)} wide × {lengthLabel(system, g.length)} long, props included
+          {t('Overall {w} wide × {l} long, props included', { w: lengthLabel(system, g.width), l: lengthLabel(system, g.length) })}
         </span>
-        <span className="sketch-legend">Dashed ring: largest prop the frame fits. Drawn to scale.</span>
+        <span className="sketch-legend">{t('Dashed ring: largest prop the frame fits. Drawn to scale.')}</span>
       </div>
     </div>
   );

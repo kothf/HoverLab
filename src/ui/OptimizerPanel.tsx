@@ -8,6 +8,7 @@ import { optEngine } from '../worker/engineClient';
 import { useUnits } from './context';
 import { NumberField, SelectField } from './fields';
 import { Icon } from './Icons';
+import { tName, useT } from '../i18n';
 
 interface Props {
   config: Config;
@@ -47,6 +48,7 @@ function targetsFrom(c: Config): OptimizerTargets {
 
 export function OptimizerPanel({ config, results, onApply }: Props) {
   const system = useUnits();
+  const tr = useT();
   const [t, setT] = useState<OptimizerTargets>(() => targetsFrom(config));
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<OptimizerResult | null>(null);
@@ -75,9 +77,9 @@ export function OptimizerPanel({ config, results, onApply }: Props) {
     <div className="opt-page">
       <div className="card opt-form">
       <h2 className="opt-title">
-        <Icon name="optimizer" /> Design optimizer
+        <Icon name="optimizer" /> {tr('Design optimizer')}
       </h2>
-      <p className="muted small">Set your goal and limits; the optimizer searches props, cell count, motor size, Kv and battery and returns the best clean designs. Apply one to open it in the calculator.</p>
+      <p className="muted small">{tr('Set your goal and limits; the optimizer searches props, cell count, motor size, Kv and battery and returns the best clean designs. Apply one to open it in the calculator.')}</p>
       <BuildSummary config={config} results={results} />
       <div className="grid2">
         <SelectField<OptimizerMode>
@@ -115,47 +117,47 @@ export function OptimizerPanel({ config, results, onApply }: Props) {
       </div>
       <div className="row">
         <button className="btn primary wide" onClick={run} disabled={busy}>
-          {busy ? 'Optimizing…' : 'Run automatic design optimizer'}
+          {busy ? tr('Optimizing…') : tr('Run automatic design optimizer')}
         </button>
-        <button className="btn small ghost" onClick={() => setT(targetsFrom(config))} title="Reset goals and limits to defaults, keeping the calculator build">
-          Reset
+        <button className="btn small ghost" onClick={() => setT(targetsFrom(config))} title={tr('Reset goals and limits to defaults, keeping the calculator build')}>
+          {tr('Reset')}
         </button>
       </div>
       {error && <p className="error-text">{error}</p>}
       </div>
       <div className="opt-out">
-      {!result && !busy && <div className="card muted opt-empty">Results appear here. Press <strong>Run automatic design optimizer</strong> to start.</div>}
+      {!result && !busy && <div className="card muted opt-empty">{tr('Results appear here. Press Run automatic design optimizer to start.')}</div>}
       {result && (
         <div className="opt-results">
           <p className="muted small">
-            {fmtNum(result.evaluated)} permutations evaluated, {fmtNum(result.feasible)} feasible, in {fmtNum(result.elapsedMs)} ms.
+            {tr('{a} permutations evaluated, {b} feasible, in {c} ms.', { a: fmtNum(result.evaluated), b: fmtNum(result.feasible), c: fmtNum(result.elapsedMs) })}
           </p>
-          {result.candidates.length === 0 && <p className="error-text">No configuration meets all constraints. Relax thrust ratio, endurance, hover throttle or prop size.</p>}
+          {result.candidates.length === 0 && <p className="error-text">{tr('No configuration meets all constraints. Relax thrust ratio, endurance, hover throttle or prop size.')}</p>}
           {result.candidates.map((c, i) => (
             <div key={i} className="opt-card">
               <div className="opt-head">
-                <strong>#{i + 1} · {c.config.prop.diameter}x{c.config.prop.pitch}x{c.config.prop.blades} · {c.config.battery.s}S{c.config.battery.p}P {fmtNum(c.config.battery.capacity * c.config.battery.p)} mAh</strong>
-                <button className="btn small primary" onClick={() => onApply(c.config)}>Apply</button>
+                <strong>#{i + 1} · {c.config.prop.diameter}x{c.config.prop.pitch}x{c.config.prop.blades} · {c.config.battery.s}S{c.config.battery.p}P {fmtNum(c.config.battery.capacity * c.config.battery.p)} {tr('mAh')}</strong>
+                <button className="btn small primary" onClick={() => onApply(c.config)}>{tr('Apply')}</button>
               </div>
               <div className="opt-metrics">
                 <span>
-                  Frame {frameClass(c.config.frame.maxPropIn, c.config.frame.layout)} · {Math.round(wheelbaseMm(c.config.frame.maxPropIn, c.config.frame.layout))} mm
+                  {tr('Frame')} {frameClass(c.config.frame.maxPropIn, c.config.frame.layout)} · {Math.round(wheelbaseMm(c.config.frame.maxPropIn, c.config.frame.layout))} {tr('mm')}
                 </span>
-                <span>Motor {c.config.motor.weight} g · {c.config.motor.kv}KV</span>
-                <span className={c.meetsFlightTime ? 'ok-text' : 'warn-text'}>Hover {fmtNum(c.hoverTime, 1)} min</span>
+                <span>{tr('Motor')} {c.config.motor.weight} {tr('g')} · {c.config.motor.kv}KV</span>
+                <span className={c.meetsFlightTime ? 'ok-text' : 'warn-text'}>{tr('Hover {v} min', { v: fmtNum(c.hoverTime, 1) })}</span>
                 <span className={t.mode === 'range' ? 'ok-text' : undefined}>
-                  Range {fmt(system, 'distance', c.range)} at {fmt(system, 'speed', c.rangeSpeed)}
+                  {tr('Range {a} at {b}', { a: fmt(system, 'distance', c.range), b: fmt(system, 'speed', c.rangeSpeed) })}
                 </span>
-                <span>T/W {fmtNum(c.thrustToWeight, 2)}</span>
-                <span>Throttle {fmtNum(c.hoverThrottle * 100)} %</span>
-                <span>{fmtNum(c.specificThrust, 2)} g/W</span>
-                <span>AUW {fmt(system, 'mass', c.auw)}</span>
-                <span>Spare lift {fmtThrust(system, c.liftCapacity)}</span>
-                <span>{fmt(system, 'temp', c.motorTempMax)} max</span>
+                <span>{tr('T/W')} {fmtNum(c.thrustToWeight, 2)}</span>
+                <span>{tr('Throttle')} {fmtNum(c.hoverThrottle * 100)} %</span>
+                <span>{fmtNum(c.specificThrust, 2)} {tr('g/W')}</span>
+                <span>{tr('AUW')} {fmt(system, 'mass', c.auw)}</span>
+                <span>{tr('Spare lift')} {fmtThrust(system, c.liftCapacity)}</span>
+                <span>{tr('{v} max', { v: fmt(system, 'temp', c.motorTempMax) })}</span>
               </div>
             </div>
           ))}
-          <p className="muted small">Optimizer parts are generic: motor resistance and no-load current are scaled from mass and Kv. Pick real parts with similar specs from the library afterwards.</p>
+          <p className="muted small">{tr('Optimizer parts are generic: motor resistance and no-load current are scaled from mass and Kv. Pick real parts with similar specs from the library afterwards.')}</p>
         </div>
       )}
       </div>
@@ -166,27 +168,28 @@ export function OptimizerPanel({ config, results, onApply }: Props) {
 /** The calculator build the optimizer starts from, so both tabs show the same parameters. */
 function BuildSummary({ config: c, results: r }: { config: Config; results: Results | null }) {
   const system = useUnits();
+  const t = useT();
   const b = c.battery;
   const rows: [string, string][] = [
-    ['Frame', `${c.frame.name ?? frameClass(c.frame.maxPropIn, c.frame.layout)} · ${LAYOUTS[c.frame.layout].label} · ${Math.round(wheelbaseMm(c.frame.maxPropIn, c.frame.layout))} mm`],
-    ['Weight', `${fmt(system, 'mass', c.frame.weight)} frame + ${fmt(system, 'mass', c.frame.payload)} payload`],
-    ['Battery', `${b.name ? `${b.name} · ` : ''}${CHEMISTRIES[b.chemistry].label} ${b.s}S${b.p}P ${fmtNum(b.capacity * b.p)} mAh`],
-    ['Motor', `${c.motor.name ?? 'Custom'} · ${c.motor.kv} KV`],
-    ['Prop', `${c.prop.name ?? 'Custom'} · ${c.prop.diameter}×${c.prop.pitch}×${c.prop.blades}`],
+    ['Frame', `${c.frame.name ? tName(c.frame.name) : frameClass(c.frame.maxPropIn, c.frame.layout)} · ${t(LAYOUTS[c.frame.layout].label)} · ${Math.round(wheelbaseMm(c.frame.maxPropIn, c.frame.layout))} ${t('mm')}`],
+    ['Weight', t('{a} frame + {b} payload', { a: fmt(system, 'mass', c.frame.weight), b: fmt(system, 'mass', c.frame.payload) })],
+    ['Battery', `${b.name ? `${tName(b.name)} · ` : ''}${CHEMISTRIES[b.chemistry].label} ${b.s}S${b.p}P ${fmtNum(b.capacity * b.p)} ${t('mAh')}`],
+    ['Motor', `${c.motor.name ? tName(c.motor.name) : t('Custom')} · ${c.motor.kv} KV`],
+    ['Prop', `${c.prop.name ? tName(c.prop.name) : t('Custom')} · ${c.prop.diameter}×${c.prop.pitch}×${c.prop.blades}`],
   ];
-  if (r) rows.push(['Now', `${r.hover ? `hover ${fmtNum(r.hoverTime, 1)} min` : 'cannot hover'} · T/W ${fmtNum(r.thrustToWeight, 2)} · AUW ${fmt(system, 'mass', r.auw)}${r.range ? ` · range ${fmt(system, 'distance', r.range.distance)}` : ''}`]);
+  if (r) rows.push(['Now', `${r.hover ? t('hover {v} min', { v: fmtNum(r.hoverTime, 1) }) : t('cannot hover')} · ${t('T/W')} ${fmtNum(r.thrustToWeight, 2)} · ${t('AUW')} ${fmt(system, 'mass', r.auw)}${r.range ? ` · ${t('range {v}', { v: fmt(system, 'distance', r.range.distance) })}` : ''}`]);
   return (
     <div className="build-summary">
-      <h4>From the calculator</h4>
+      <h4>{t('From the calculator')}</h4>
       <dl>
         {rows.map(([k, v]) => (
           <div key={k}>
-            <dt>{k}</dt>
+            <dt>{t(k)}</dt>
             <dd>{v}</dd>
           </div>
         ))}
       </dl>
-      <p className="muted small">Frame, payload, battery chemistry and environment below follow the calculator automatically.</p>
+      <p className="muted small">{t('Frame, payload, battery chemistry and environment below follow the calculator automatically.')}</p>
     </div>
   );
 }

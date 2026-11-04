@@ -23,6 +23,7 @@ import {
 } from './solver';
 import type {
   Config,
+  Msg,
   CurvePoint,
   OperatingPoint,
   PayloadPoint,
@@ -40,14 +41,17 @@ export const PRACTICAL_TW = 2;
 export const PRACTICAL_HOVER_THROTTLE = 0.6;
 export const MOTOR_TEMP_LIMIT = 80;
 
+/** Fills {name} placeholders in an English message template. */
+export const english = (m: Msg) => m.tpl.replace(/\{(\w+)\}/g, (x, k: string) => (m.vars && k in m.vars ? String(m.vars[k]) : x));
+
 /** FRS 3.4 data verification: reject physically impossible inputs before simulating. */
-export function validateConfig(c: Config): string[] {
-  const e: string[] = [];
+export function validateMsgs(c: Config): Msg[] {
+  const e: Msg[] = [];
   const pos = (v: number | null | undefined, label: string) => {
-    if (v == null || !Number.isFinite(v) || v <= 0) e.push(`${label} must be greater than 0`);
+    if (v == null || !Number.isFinite(v) || v <= 0) e.push({ tpl: '{label} must be greater than 0', vars: { label } });
   };
   const nonNeg = (v: number, label: string) => {
-    if (!Number.isFinite(v) || v < 0) e.push(`${label} cannot be negative`);
+    if (!Number.isFinite(v) || v < 0) e.push({ tpl: '{label} cannot be negative', vars: { label } });
   };
   pos(c.motor.kv, 'Motor Kv');
   pos(c.motor.rm, 'Motor Rm');
@@ -56,26 +60,28 @@ export function validateConfig(c: Config): string[] {
   pos(c.motor.weight, 'Motor weight');
   pos(c.prop.diameter, 'Prop diameter');
   pos(c.prop.pitch, 'Prop pitch');
-  if (!Number.isInteger(c.prop.blades) || c.prop.blades < 2 || c.prop.blades > 8) e.push('Blade count must be 2–8');
+  if (!Number.isInteger(c.prop.blades) || c.prop.blades < 2 || c.prop.blades > 8) e.push({ tpl: 'Blade count must be 2–8' });
   if (c.prop.ct != null) pos(c.prop.ct, 'Thrust constant');
   if (c.prop.cp != null) pos(c.prop.cp, 'Power constant');
-  if (!Number.isInteger(c.battery.s) || c.battery.s < 1 || c.battery.s > 24) e.push('Cell count S must be 1–24');
-  if (!Number.isInteger(c.battery.p) || c.battery.p < 1 || c.battery.p > 20) e.push('Parallel count P must be 1–20');
+  if (!Number.isInteger(c.battery.s) || c.battery.s < 1 || c.battery.s > 24) e.push({ tpl: 'Cell count S must be 1–24' });
+  if (!Number.isInteger(c.battery.p) || c.battery.p < 1 || c.battery.p > 20) e.push({ tpl: 'Parallel count P must be 1–20' });
   pos(c.battery.capacity, 'Battery capacity');
   pos(c.battery.cRating, 'Battery C-rating');
   nonNeg(c.battery.resistance, 'Battery resistance');
   if (c.battery.weight != null) pos(c.battery.weight, 'Battery weight');
-  if (!(c.battery.maxDischarge > 0 && c.battery.maxDischarge <= 1)) e.push('Usable capacity must be 1–100 %');
+  if (!(c.battery.maxDischarge > 0 && c.battery.maxDischarge <= 1)) e.push({ tpl: 'Usable capacity must be 1–100 %' });
   pos(c.esc.maxCurrent, 'ESC current');
   nonNeg(c.esc.resistance, 'ESC resistance');
   nonNeg(c.esc.weight, 'ESC weight');
   pos(c.frame.weight, 'Frame weight');
   nonNeg(c.frame.payload, 'Payload');
   nonNeg(c.frame.accessoryCurrent, 'Accessory current');
-  if (c.env.temperature < -60 || c.env.temperature > 60) e.push('Air temperature must be −60…60 °C');
-  if (c.env.elevation < -500 || c.env.elevation > 8000) e.push('Elevation must be −500…8000 m');
+  if (c.env.temperature < -60 || c.env.temperature > 60) e.push({ tpl: 'Air temperature must be −60…60 °C' });
+  if (c.env.elevation < -500 || c.env.elevation > 8000) e.push({ tpl: 'Elevation must be −500…8000 m' });
   return e;
 }
+
+export const validateConfig = (c: Config): string[] => validateMsgs(c).map(english);
 
 export function batteryWeight(c: Config): number {
   const b = c.battery;
@@ -224,7 +230,7 @@ function worst(...s: Severity[]): Severity {
 
 function assess(c: Config, r: Omit<Results, 'warnings' | 'status'>): { warnings: Warning[]; status: StatusIndicator[] } {
   const w: Warning[] = [];
-  const add = (code: string, severity: 'warn' | 'danger', message: string) => w.push({ code, severity, message });
+  const add = (code: string, severity: 'warn' | 'danger', tpl: string, vars?: Msg['vars']) => w.push({ code, severity, tpl, vars, message: english({ tpl, vars }) });
   const { max, hover } = r;
   const pct = (x: number) => `${Math.round(x * 100)} %`;
 
@@ -235,35 +241,35 @@ function assess(c: Config, r: Omit<Results, 'warnings' | 'status'>): { warnings:
     add('no-hover', 'danger', 'Insufficient thrust: the craft cannot hover.');
   } else if (r.thrustToWeight < 1.6) {
     thrustSev = 'danger';
-    add('low-tw', 'danger', `Thrust-to-weight ${r.thrustToWeight.toFixed(2)}:1 is too low for safe control (≥ 2:1 recommended).`);
+    add('low-tw', 'danger', 'Thrust-to-weight {a}:1 is too low for safe control (≥ 2:1 recommended).', { a: r.thrustToWeight.toFixed(2) });
   } else if (r.thrustToWeight < 2) {
     thrustSev = 'warn';
-    add('low-tw', 'warn', `Thrust-to-weight ${r.thrustToWeight.toFixed(2)}:1 is below the recommended 2:1.`);
+    add('low-tw', 'warn', 'Thrust-to-weight {a}:1 is below the recommended 2:1.', { a: r.thrustToWeight.toFixed(2) });
   }
   let throttleSev: Severity = 'ok';
   if (hover && hover.throttle > 0.75) {
     throttleSev = 'danger';
-    add('hover-throttle', 'danger', `Hover throttle ${pct(hover.throttle)} leaves almost no control authority.`);
+    add('hover-throttle', 'danger', 'Hover throttle {a} leaves almost no control authority.', { a: pct(hover.throttle) });
   } else if (hover && hover.throttle > 0.6) {
     throttleSev = 'warn';
-    add('hover-throttle', 'warn', `Hover throttle ${pct(hover.throttle)} is high; aim for 35–55 %.`);
+    add('hover-throttle', 'warn', 'Hover throttle {a} is high; aim for 35–55 %.', { a: pct(hover.throttle) });
   } else if (!hover) throttleSev = 'danger';
 
   // Thermal
   let thermalSev: Severity = 'ok';
   if (r.motorTempMax > MOTOR_TEMP_LIMIT || r.motorTempHover > MOTOR_TEMP_LIMIT) {
     thermalSev = 'danger';
-    add('motor-temp', 'danger', `Motor overload: predicted ${Math.round(Math.max(r.motorTempMax, r.motorTempHover))} °C exceeds ${MOTOR_TEMP_LIMIT} °C.`);
+    add('motor-temp', 'danger', 'Motor overload: predicted {a} °C exceeds {b} °C.', { a: Math.round(Math.max(r.motorTempMax, r.motorTempHover)), b: MOTOR_TEMP_LIMIT });
   } else if (r.motorTempMax > 65) {
     thermalSev = 'warn';
-    add('motor-temp', 'warn', `Motor runs warm: ${Math.round(r.motorTempMax)} °C after ${MAX_TEMP_WINDOW_S} s at full throttle.`);
+    add('motor-temp', 'warn', 'Motor runs warm: {a} °C after {b} s at full throttle.', { a: Math.round(r.motorTempMax), b: MAX_TEMP_WINDOW_S });
   }
 
   // Motor ratings
   let motorSev: Severity = 'ok';
   if (max.motorCurrent > c.motor.maxCurrent || max.motorVoltage * max.motorCurrent > c.motor.maxPower) {
     motorSev = 'danger';
-    add('motor-rating', 'danger', `Motor max current/power exceeded: ${max.motorCurrent.toFixed(1)} A, ${Math.round(max.motorVoltage * max.motorCurrent)} W (rated ${c.motor.maxCurrent} A / ${c.motor.maxPower} W).`);
+    add('motor-rating', 'danger', 'Motor max current/power exceeded: {a} A, {b} W (rated {c} A / {d} W).', { a: max.motorCurrent.toFixed(1), b: Math.round(max.motorVoltage * max.motorCurrent), c: c.motor.maxCurrent, d: c.motor.maxPower });
   } else if (max.motorCurrent > 0.9 * c.motor.maxCurrent || max.motorVoltage * max.motorCurrent > 0.9 * c.motor.maxPower) {
     motorSev = 'warn';
     add('motor-rating', 'warn', 'Motor operates within 10 % of its rated current/power at full throttle.');
@@ -273,37 +279,37 @@ function assess(c: Config, r: Omit<Results, 'warnings' | 'status'>): { warnings:
   let escSev: Severity = 'ok';
   if (max.motorCurrent > c.esc.burstCurrent) {
     escSev = 'danger';
-    add('esc', 'danger', `ESC overload: ${max.motorCurrent.toFixed(1)} A exceeds the ${c.esc.burstCurrent} A burst rating.`);
+    add('esc', 'danger', 'ESC overload: {a} A exceeds the {b} A burst rating.', { a: max.motorCurrent.toFixed(1), b: c.esc.burstCurrent });
   } else if (max.motorCurrent > c.esc.maxCurrent) {
     escSev = 'warn';
-    add('esc', 'warn', `ESC above continuous rating at full throttle (${max.motorCurrent.toFixed(1)} A > ${c.esc.maxCurrent} A); burst use only.`);
+    add('esc', 'warn', 'ESC above continuous rating at full throttle ({a} A > {b} A); burst use only.', { a: max.motorCurrent.toFixed(1), b: c.esc.maxCurrent });
   }
 
   // Battery
   let cSev: Severity = 'ok';
   if (max.cRate > c.battery.cBurst) {
     cSev = 'danger';
-    add('c-rate', 'danger', `Battery C-rate ${max.cRate.toFixed(1)}C exceeds burst rating ${c.battery.cBurst}C.`);
+    add('c-rate', 'danger', 'Battery C-rate {a}C exceeds burst rating {b}C.', { a: max.cRate.toFixed(1), b: c.battery.cBurst });
   } else if (max.cRate > c.battery.cRating) {
     cSev = 'warn';
-    add('c-rate', 'warn', `Battery C-rate ${max.cRate.toFixed(1)}C exceeds continuous rating ${c.battery.cRating}C.`);
+    add('c-rate', 'warn', 'Battery C-rate {a}C exceeds continuous rating {b}C.', { a: max.cRate.toFixed(1), b: c.battery.cRating });
   } else if (max.cRate > 0.9 * c.battery.cRating) {
     cSev = 'warn';
-    add('c-rate', 'warn', `Battery runs at ${pct(max.cRate / c.battery.cRating)} of its continuous ${c.battery.cRating}C rating at full throttle.`);
+    add('c-rate', 'warn', 'Battery runs at {a} of its continuous {b}C rating at full throttle.', { a: pct(max.cRate / c.battery.cRating), b: c.battery.cRating });
   }
   const cellMin = CHEMISTRIES[c.battery.chemistry].min;
   if (max.batteryVoltage / c.battery.s < cellMin) {
     cSev = worst(cSev, 'warn');
-    add('sag', 'warn', `Voltage sags to ${(max.batteryVoltage / c.battery.s).toFixed(2)} V/cell at full throttle (min ${cellMin} V).`);
+    add('sag', 'warn', 'Voltage sags to {a} V/cell at full throttle (min {b} V).', { a: (max.batteryVoltage / c.battery.s).toFixed(2), b: cellMin });
   } else if (r.sagEnd < cellMin) {
     cSev = worst(cSev, 'warn');
-    add('sag', 'warn', `Near the end of the pack, full throttle sags to ${r.sagEnd.toFixed(2)} V/cell (min ${cellMin} V): expect low-voltage cut-outs.`);
+    add('sag', 'warn', 'Near the end of the pack, full throttle sags to {a} V/cell (min {b} V): expect low-voltage cut-outs.', { a: r.sagEnd.toFixed(2), b: cellMin });
   }
 
   // Geometry
-  if (c.prop.diameter > c.frame.maxPropIn) add('prop-size', 'danger', `Prop ${c.prop.diameter}" exceeds the frame limit of ${c.frame.maxPropIn}".`);
-  if (max.tipMach > 0.8) add('tip-mach', 'danger', `Prop tip speed Mach ${max.tipMach.toFixed(2)} — risk of blade failure and severe loss of efficiency.`);
-  else if (max.tipMach > 0.7) add('tip-mach', 'warn', `Prop tip speed Mach ${max.tipMach.toFixed(2)} is high (keep below 0.7).`);
+  if (c.prop.diameter > c.frame.maxPropIn) add('prop-size', 'danger', 'Prop {a}" exceeds the frame limit of {b}".', { a: c.prop.diameter, b: c.frame.maxPropIn });
+  if (max.tipMach > 0.8) add('tip-mach', 'danger', 'Prop tip speed Mach {a} — risk of blade failure and severe loss of efficiency.', { a: max.tipMach.toFixed(2) });
+  else if (max.tipMach > 0.7) add('tip-mach', 'warn', 'Prop tip speed Mach {a} is high (keep below 0.7).', { a: max.tipMach.toFixed(2) });
 
   const status: StatusIndicator[] = [
     { key: 'thrust', label: 'Thrust/Weight', severity: thrustSev, value: `${r.thrustToWeight.toFixed(2)} : 1` },
@@ -317,8 +323,8 @@ function assess(c: Config, r: Omit<Results, 'warnings' | 'status'>): { warnings:
 }
 
 export function simulate(c: Config): SimulationOutcome {
-  const errors = validateConfig(c);
-  if (errors.length) return { ok: false, errors };
+  const errorMsgs = validateMsgs(c);
+  if (errorMsgs.length) return { ok: false, errors: errorMsgs.map(english), errorMsgs };
 
   const dr = buildDrive(c);
   const chem = CHEMISTRIES[c.battery.chemistry];

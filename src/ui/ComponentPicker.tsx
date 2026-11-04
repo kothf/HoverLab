@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { fuzzyFilter } from '../lib/fuzzy';
 import { Icon, type IconName } from './Icons';
+import { tName, useT } from '../i18n';
 
 interface Props<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }> {
   items: T[];
@@ -15,7 +16,8 @@ interface Props<T extends { id: string; brand: string; model: string; custom?: b
 }
 
 /** Fuzzy-search dropdown over library parts (FRS 2.2.3), e.g. "tmotor 2207" or "gem 5". */
-export function ComponentPicker<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }>({ items, current, detail, onPick, placeholder, onDefine, kindLabel = 'part', icon }: Props<T>) {
+export function ComponentPicker<T extends { id: string; brand: string; model: string; custom?: boolean; note?: string }>({ items, current, detail, onPick, placeholder, onDefine, kindLabel = 'parts', icon }: Props<T>) {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -39,7 +41,7 @@ export function ComponentPicker<T extends { id: string; brand: string; model: st
       <input
         type="search"
         value={query}
-        placeholder={current ? `${current} — search to replace` : placeholder}
+        placeholder={current ? t('{name} — search to replace', { name: tName(current) }) : placeholder}
         onFocus={() => setOpen(true)}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -58,7 +60,7 @@ export function ComponentPicker<T extends { id: string; brand: string; model: st
       />
       {open && (
         <ul className="picker-list" role="listbox">
-          {results.length === 0 && <li className="picker-empty">No matching {kindLabel}s in the library.</li>}
+          {results.length === 0 && <li className="picker-empty">{t('No matching {kind} in the library.', { kind: kindLabel })}</li>}
           {results.map((it, i) => (
             <li key={it.id}>
               <button
@@ -70,11 +72,11 @@ export function ComponentPicker<T extends { id: string; brand: string; model: st
                 <span className="picker-name">
                   {icon && <Icon name={icon} size={15} className="picker-icon" />}
                   {it.brand} {it.model}
-                  {it.custom && <span className="tag">custom</span>}
+                  {it.custom && <span className="tag">{t('custom')}</span>}
                 </span>
                 <span className="picker-detail">
                   {detail(it)}
-                  {it.note && <em> · {it.note}</em>}
+                  {it.note && <em> · {t(it.note)}</em>}
                 </span>
               </button>
             </li>
@@ -90,7 +92,7 @@ export function ComponentPicker<T extends { id: string; brand: string; model: st
                   setQuery('');
                 }}
               >
-                ＋ Can't find it? Define your own {kindLabel}
+                ＋ {t("Can't find it? Define a custom part")}
               </button>
             </li>
           )}

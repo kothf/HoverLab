@@ -1,5 +1,6 @@
 import { BUILTIN, type ComponentKind, type Library } from '../data/components';
 import type { Config } from '../engine/types';
+import type { Lang } from '../i18n';
 
 const KEYS = {
   configs: 'hoverlab.configs.v1',
@@ -33,6 +34,7 @@ export const storeCurrent = (c: Config) => write(KEYS.current, c);
 export interface Prefs {
   units: 'metric' | 'imperial';
   theme: 'dark' | 'light';
+  lang?: Lang;
 }
 export const loadPrefs = (): Prefs => read<Prefs>(KEYS.prefs, { units: 'metric', theme: 'dark' });
 export const storePrefs = (p: Prefs) => write(KEYS.prefs, p);

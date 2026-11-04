@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { LAYOUTS } from '../engine/physics';
 import type { Layout } from '../engine/types';
 
@@ -27,5 +28,5 @@ export function maxPropForWheelbase(mm: number, layout: Layout): number {
 /** Common size-class name, e.g. 5" class, 450 class. */
 export function frameClass(maxPropIn: number, layout: Layout): string {
   const wb = wheelbaseMm(maxPropIn, layout);
-  return maxPropIn <= 8 ? `${+maxPropIn.toFixed(1)}″ class` : `${Math.round(wb / 10) * 10} mm class`;
+  return maxPropIn <= 8 ? t('{n}″ class', { n: +maxPropIn.toFixed(1) }) : t('{n} mm class', { n: Math.round(wb / 10) * 10 });
 }

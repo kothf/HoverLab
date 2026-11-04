@@ -7,6 +7,7 @@ import { fuzzyFilter } from '../lib/fuzzy';
 import { parseLibraryJson } from '../lib/storage';
 import type { AnyPart } from './applyPart';
 import { Icon } from './Icons';
+import { t as tr, useT } from '../i18n';
 
 interface Props {
   library: Library; // merged (custom first)
@@ -69,6 +70,7 @@ function fromConfig(kind: ComponentKind, c: Config): Record<string, string> {
 }
 
 export function LibraryDialog({ library, custom, config, onChangeCustom, onClose, initialKind = 'motor', initialModel = null, onUse }: Props) {
+  const t = useT();
   const [kind, setKind] = useState<ComponentKind>(initialKind);
   const [query, setQuery] = useState('');
   const [draft, setDraft] = useState<Record<string, string> | null>(() =>
@@ -101,7 +103,7 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
       }
       const v = Number(raw);
       // FRS 3.4 data verification: physical quantities must be positive.
-      if (!Number.isFinite(v) || v <= 0) errors.push(`${f.label} must be a positive number`);
+      if (!Number.isFinite(v) || v <= 0) errors.push(tr('{label} must be a positive number', { label: f.label }));
       item[f.key] = v;
     }
     if (kind === 'battery' && item.form === 'cell') item.s = 1;
@@ -117,7 +119,7 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
       onClose();
       return;
     }
-    setMessage(`Saved ${item.brand} ${item.model}.`);
+    setMessage(tr('Saved {name}.', { name: `${item.brand} ${item.model}` }));
   };
 
   const remove = (id: string) => onChangeCustom({ ...custom, [kind]: (custom[kind] as { id: string }[]).filter((x) => x.id !== id) });
@@ -128,48 +130,48 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
       const merged = { ...custom };
       (Object.keys(lib) as ComponentKind[]).forEach((k) => ((merged[k] as unknown[]) = [...lib[k], ...custom[k]]));
       onChangeCustom(merged);
-      setMessage(`Imported ${count} part${count === 1 ? '' : 's'}${skipped ? `, skipped ${skipped} invalid` : ''}.`);
+      setMessage(tr('Imported parts: {n}.', { n: count }) + (skipped ? ' ' + tr('Skipped invalid: {n}.', { n: skipped }) : ''));
     } catch (e) {
-      setMessage(`Import failed: ${String(e)}`);
+      setMessage(tr('Import failed: {e}', { e: String(e) }));
     }
   };
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" role="dialog" aria-label="Component library" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" role="dialog" aria-label={t('Component library')} onClick={(e) => e.stopPropagation()}>
         <header className="modal-head">
-          <h2>Component library</h2>
-          <button className="btn ghost" onClick={onClose} aria-label="Close">×</button>
+          <h2>{t('Component library')}</h2>
+          <button className="btn ghost" onClick={onClose} aria-label={t('Close')}>×</button>
         </header>
         <div className="tabs">
           {KINDS.map((k) => (
             <button key={k.key} className={kind === k.key ? 'active' : ''} onClick={() => { setKind(k.key); setDraft(null); }}>
-              <Icon name={k.key} size={16} /> {k.label} <span className="muted">({library[k.key].length})</span>
+              <Icon name={k.key} size={16} /> {t(k.label)} <span className="muted">({library[k.key].length})</span>
             </button>
           ))}
         </div>
         <div className="row wrap">
-          <input type="search" placeholder="Filter…" value={query} onChange={(e) => setQuery(e.target.value)} />
-          <button className="btn small" onClick={() => setDraft({ brand: '', model: '' })}>+ New part</button>
-          <button className="btn small" onClick={() => setDraft(fromConfig(kind, config))}>+ From current config</button>
-          <button className="btn small ghost" onClick={() => fileRef.current?.click()}>Import JSON</button>
-          <button className="btn small ghost" onClick={() => download('hoverlab-custom-parts.json', JSON.stringify(custom, null, 2), 'application/json')}>Export custom</button>
-          <button className="btn small ghost" onClick={() => download('hoverlab-library.json', JSON.stringify(library, null, 2), 'application/json')}>Export all</button>
+          <input type="search" placeholder={t('Filter…')} value={query} onChange={(e) => setQuery(e.target.value)} />
+          <button className="btn small" onClick={() => setDraft({ brand: '', model: '' })}>{t('+ New part')}</button>
+          <button className="btn small" onClick={() => setDraft(fromConfig(kind, config))}>{t('+ From current config')}</button>
+          <button className="btn small ghost" onClick={() => fileRef.current?.click()}>{t('Import JSON')}</button>
+          <button className="btn small ghost" onClick={() => download('hoverlab-custom-parts.json', JSON.stringify(custom, null, 2), 'application/json')}>{t('Export custom')}</button>
+          <button className="btn small ghost" onClick={() => download('hoverlab-library.json', JSON.stringify(library, null, 2), 'application/json')}>{t('Export all')}</button>
           <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => e.target.files?.[0] && importFile(e.target.files[0])} />
         </div>
         {message && <p className="muted small">{message}</p>}
         {draft && (
           <div className="card draft">
-            <p className="muted small">Values start from your current build; change whatever differs. Custom parts are saved in this browser and can be exported as JSON.</p>
+            <p className="muted small">{t('Values start from your current build; change whatever differs. Custom parts are saved in this browser and can be exported as JSON.')}</p>
             <div className="grid3">
-              <label className="field"><span className="field-label">Brand</span><input value={draft.brand ?? ''} onChange={(e) => setDraft({ ...draft, brand: e.target.value })} /></label>
-              <label className="field"><span className="field-label">Model</span><input value={draft.model ?? ''} onChange={(e) => setDraft({ ...draft, model: e.target.value })} /></label>
+              <label className="field"><span className="field-label">{t('Brand')}</span><input value={draft.brand ?? ''} onChange={(e) => setDraft({ ...draft, brand: e.target.value })} /></label>
+              <label className="field"><span className="field-label">{t('Model')}</span><input value={draft.model ?? ''} onChange={(e) => setDraft({ ...draft, model: e.target.value })} /></label>
               {FIELDS[kind].map((f) => (
                 <label key={f.key} className="field">
-                  <span className="field-label">{f.label}</span>
+                  <span className="field-label">{t(f.label)}</span>
                   {f.type === 'select' ? (
                     <select value={draft[f.key] ?? f.options![0].value} onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}>
-                      {f.options!.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      {f.options!.map((o) => <option key={o.value} value={o.value}>{t(o.label)}</option>)}
                     </select>
                   ) : (
                     <input inputMode="decimal" value={draft[f.key] ?? ''} onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })} />
@@ -178,9 +180,9 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
               ))}
             </div>
             <div className="row">
-              {onUse && <button className="btn primary small" onClick={() => save(true)}>Save &amp; use in this build</button>}
-              <button className={`btn small${onUse ? '' : ' primary'}`} onClick={() => save()}>Save to library</button>
-              <button className="btn ghost small" onClick={() => setDraft(null)}>Cancel</button>
+              {onUse && <button className="btn primary small" onClick={() => save(true)}>{t('Save & use in this build')}</button>}
+              <button className={`btn small${onUse ? '' : ' primary'}`} onClick={() => save()}>{t('Save to library')}</button>
+              <button className="btn ghost small" onClick={() => setDraft(null)}>{t('Cancel')}</button>
             </div>
           </div>
         )}
@@ -188,13 +190,13 @@ export function LibraryDialog({ library, custom, config, onChangeCustom, onClose
           {items.map((it) => (
             <div key={it.id} className="lib-item">
               <span>
-                {it.brand} {it.model} {it.custom && <span className="tag">custom</span>}
-                {it.note && <span className="muted small"> · {it.note}</span>}
+                {it.brand} {it.model} {it.custom && <span className="tag">{t('custom')}</span>}
+                {it.note && <span className="muted small"> · {t(it.note)}</span>}
               </span>
               <span className="muted small">
-                {FIELDS[kind].filter((f) => f.type !== 'select').slice(0, 4).map((f) => `${f.label.split(' (')[0]} ${(it as unknown as Record<string, unknown>)[f.key] ?? '—'}`).join(' · ')}
+                {FIELDS[kind].filter((f) => f.type !== 'select').slice(0, 4).map((f) => `${t(f.label).split(' (')[0]} ${(it as unknown as Record<string, unknown>)[f.key] ?? '—'}`).join(' · ')}
               </span>
-              {it.custom && <button className="btn ghost small" onClick={() => remove(it.id)} aria-label="Delete">Delete</button>}
+              {it.custom && <button className="btn ghost small" onClick={() => remove(it.id)} aria-label={t('Delete')}>{t('Delete')}</button>}
             </div>
           ))}
         </div>

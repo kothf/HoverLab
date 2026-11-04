@@ -19,6 +19,7 @@ import { applyPart, type AnyPart } from './applyPart';
 import { ComponentPicker } from './ComponentPicker';
 import { useUnits } from './context';
 import { NumberField, Section, SelectField } from './fields';
+import { t as tr, tName, useT } from '../i18n';
 
 interface Props {
   config: Config;
@@ -30,15 +31,16 @@ interface Props {
 
 const edited = (name?: string) => (name && !name.endsWith(' (edited)') ? `${name} (edited)` : name);
 
-const motorDetail = (m: MotorItem) => `${m.kv}KV · ${m.weight} g · ${m.maxCurrent} A`;
+const motorDetail = (m: MotorItem) => `${m.kv}KV · ${m.weight} ${tr('g')} · ${m.maxCurrent} ${tr('A')}`;
 const propDetail = (p: PropItem) => `${p.diameter}x${p.pitch}x${p.blades}`;
 const batteryDetail = (b: BatteryItem) =>
-  b.form === 'cell' ? `cell · ${b.capacity} mAh · ${b.cRating}C` : `${b.s}S · ${b.capacity} mAh · ${b.cRating}C · ${b.weight} g`;
-const escDetail = (e: EscItem) => `${e.maxCurrent} A · ${e.format}`;
-const frameDetail = (f: FrameItem) => `${LAYOUTS[f.layout].label} · ${f.weight} g · ≤${f.maxPropIn}"`;
+  b.form === 'cell' ? `${tr('cell')} · ${b.capacity} ${tr('mAh')} · ${b.cRating}C` : `${b.s}S · ${b.capacity} ${tr('mAh')} · ${b.cRating}C · ${b.weight} ${tr('g')}`;
+const escDetail = (e: EscItem) => `${e.maxCurrent} ${tr('A')} · ${e.format === '4in1' ? '4-in-1' : tr('single')}`;
+const frameDetail = (f: FrameItem) => `${tr(LAYOUTS[f.layout].label)} · ${f.weight} ${tr('g')} · ≤${f.maxPropIn}"`;
 
 export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Props) {
   const system = useUnits();
+  const t = useT();
   // When the cell count changes, suggest the Kv that keeps the same prop speed (FRS 3.3 mode 3).
   const [kvHint, setKvHint] = useState<{ fromS: number; motorKv: number } | null>(null);
   useEffect(() => setKvHint(null), [c.motor.kv, c.motor.name]);
@@ -81,11 +83,11 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
           items={library.frame}
           current={c.frame.name}
           detail={frameDetail}
-          placeholder="Search frames…"
+          placeholder={t('Search frames…')}
           onPick={pick('frame')}
           onDefine={define('frame')}
           icon="frame"
-          kindLabel="frame"
+          kindLabel={t('frames')}
         />
         <div className="grid2">
           <SelectField<Layout>
@@ -116,16 +118,16 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
         </div>
       </Section>
 
-      <Section icon="battery" title="Battery" summary={`${chem.label} ${b.s}S${b.p}P ${b.capacity * b.p} mAh · ${((b.s * chem.nominal * b.capacity * b.p) / 1000).toFixed(0)} Wh`}>
+      <Section icon="battery" title="Battery" summary={`${chem.label} ${b.s}S${b.p}P ${b.capacity * b.p} ${t('mAh')} · ${((b.s * chem.nominal * b.capacity * b.p) / 1000).toFixed(0)} ${t('Wh')}`}>
         <ComponentPicker
           items={library.battery}
           current={b.name}
           detail={batteryDetail}
-          placeholder="Search batteries or cells…"
+          placeholder={t('Search batteries or cells…')}
           onPick={pick('battery')}
           onDefine={define('battery')}
           icon="battery"
-          kindLabel="battery"
+          kindLabel={t('batteries')}
         />
         <div className="grid2">
           <SelectField<Chemistry>
@@ -139,7 +141,7 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
             <NumberField label="Parallel P" value={b.p} integer onChange={(v) => up('battery', { p: v ?? 1 })} step={1} min={1} max={20} />
           </div>
           <NumberField label="Capacity per cell" unitLabel="mAh" value={b.capacity} onChange={(v) => up('battery', { capacity: v ?? 100 })} step={100} />
-          <NumberField label="Cell resistance" unitLabel="mΩ" value={b.resistance} onChange={(v) => up('battery', { resistance: v ?? 0 })} step={0.5} hint={`For this capacity a typical value is ${defaultCellResistance(b.chemistry, b.capacity).toFixed(1)} mΩ`} />
+          <NumberField label="Cell resistance" unitLabel="mΩ" value={b.resistance} onChange={(v) => up('battery', { resistance: v ?? 0 })} step={0.5} hint={t('For this capacity a typical value is {v} mΩ', { v: defaultCellResistance(b.chemistry, b.capacity).toFixed(1) })} />
           <NumberField label="Continuous C" unitLabel="C" value={b.cRating} onChange={(v) => up('battery', { cRating: v ?? 1 })} step={5} />
           <NumberField label="Burst C" unitLabel="C" value={b.cBurst} onChange={(v) => up('battery', { cBurst: v ?? 1 })} step={5} />
           <NumberField label="Pack weight" quantity="mass" value={b.weight} auto={batAuto} onChange={(v) => up('battery', { weight: v })} step={10} />
@@ -148,30 +150,30 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
         {kvHint && suggestedKv !== null && suggestedKv !== c.motor.kv && (
           <div className="kv-hint" role="status">
             <span>
-              Changed from {kvHint.fromS}S to {b.s}S. To keep the same prop speed and thrust, use a <strong>{suggestedKv} KV</strong> motor (now {c.motor.kv} KV).
+              {t('Changed from {a}S to {b}S. To keep the same prop speed and thrust, use a {kv} KV motor (now {now} KV).', { a: kvHint.fromS, b: b.s, kv: suggestedKv, now: c.motor.kv })}
             </span>
             <span className="row">
               <button className="btn small primary" onClick={() => onChange({ ...c, motor: rewoundMotor(c.motor, suggestedKv) })}>
-                Use {suggestedKv} KV
+                {t('Use {kv} KV', { kv: suggestedKv })}
               </button>
               <button className="btn small ghost" onClick={() => setKvHint(null)}>
-                Keep motor
+                {t('Keep motor')}
               </button>
             </span>
           </div>
         )}
       </Section>
 
-      <Section icon="esc" title="ESC" summary={`${c.esc.maxCurrent} A cont. / ${c.esc.burstCurrent} A burst`}>
+      <Section icon="esc" title="ESC" summary={t('{a} A cont. / {b} A burst', { a: c.esc.maxCurrent, b: c.esc.burstCurrent })}>
         <ComponentPicker
           items={library.esc}
           current={c.esc.name}
           detail={escDetail}
-          placeholder="Search ESCs…"
+          placeholder={t('Search ESCs…')}
           onPick={pick('esc')}
           onDefine={define('esc')}
           icon="esc"
-          kindLabel="ESC"
+          kindLabel={t('ESCs')}
         />
         <div className="grid2">
           <NumberField label="Continuous current" unitLabel="A" value={c.esc.maxCurrent} onChange={(v) => up('esc', { maxCurrent: v ?? 1 })} step={5} />
@@ -181,16 +183,16 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
         </div>
       </Section>
 
-      <Section icon="motor" title="Motor" summary={`${c.motor.name ?? ''} ${c.motor.kv}KV`}>
+      <Section icon="motor" title="Motor" summary={`${tName(c.motor.name)} ${c.motor.kv}KV`}>
         <ComponentPicker
           items={library.motor}
           current={c.motor.name}
           detail={motorDetail}
-          placeholder="Search motors, e.g. T-Motor 2207…"
+          placeholder={t('Search motors, e.g. T-Motor 2207…')}
           onPick={pick('motor')}
           onDefine={define('motor')}
           icon="motor"
-          kindLabel="motor"
+          kindLabel={t('motors')}
         />
         <div className="grid2">
           <NumberField label="Motor Kv" unitLabel="RPM/V" value={c.motor.kv} onChange={(v) => up('motor', { kv: v ?? 1 })} step={50} slider min={50} max={5000} />
@@ -208,11 +210,11 @@ export function ConfigPanel({ config: c, library, auw, onChange, onDefine }: Pro
           items={library.prop}
           current={c.prop.name}
           detail={propDetail}
-          placeholder="Search props, e.g. gemfan 5…"
+          placeholder={t('Search props, e.g. gemfan 5…')}
           onPick={pick('prop')}
           onDefine={define('prop')}
           icon="prop"
-          kindLabel="propeller"
+          kindLabel={t('propellers')}
         />
         <div className="grid2">
           <NumberField label="Diameter" unitLabel="in" value={c.prop.diameter} onChange={(v) => up('prop', { diameter: v ?? 1 })} step={0.5} slider min={2} max={32} />

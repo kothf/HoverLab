@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { fmtNum, unit, type Quantity } from '../lib/units';
 import { useUnits } from './context';
-import { HELP } from './help';
+import { helpText, useT } from '../i18n';
 import { HelpTip } from './HelpTip';
 import { Icon, type IconName } from './Icons';
 
@@ -24,6 +24,7 @@ interface NumberFieldProps {
 
 export function NumberField({ label, value, onChange, quantity, unitLabel, step, min, max, integer, auto, hint, slider }: NumberFieldProps) {
   const system = useUnits();
+  const t = useT();
   const u = quantity ? unit(system, quantity) : null;
   const toDisp = (v: number) => (u ? u.toDisplay(v) : v);
   const fromDisp = (v: number) => (u ? u.fromDisplay(v) : v);
@@ -53,8 +54,8 @@ export function NumberField({ label, value, onChange, quantity, unitLabel, step,
   return (
     <div className={`field${invalid ? ' invalid' : ''}`}>
       <span className="field-label">
-        <label htmlFor={id}>{label}</label>
-        <HelpTip topic={label} text={[HELP[label], hint].filter(Boolean).join(' ') || undefined} />
+        <label htmlFor={id}>{t(label)}</label>
+        <HelpTip topic={label} text={[helpText(label), hint].filter(Boolean).join(' ') || undefined} />
       </span>
       <span className="field-input">
         <input
@@ -62,7 +63,7 @@ export function NumberField({ label, value, onChange, quantity, unitLabel, step,
           type="text"
           inputMode="decimal"
           value={text}
-          placeholder={auto !== undefined ? `auto ≈ ${fmtNum(toDisp(auto), u ? u.digits : 2)}` : undefined}
+          placeholder={auto !== undefined ? t('auto ≈ {v}', { v: fmtNum(toDisp(auto), u ? u.digits : 2) }) : undefined}
           onFocus={() => setFocused(true)}
           onBlur={() => {
             setFocused(false);
@@ -80,7 +81,7 @@ export function NumberField({ label, value, onChange, quantity, unitLabel, step,
             commit(String(+next.toFixed(6)));
           }}
         />
-        {(u || unitLabel) && <span className="field-unit">{u ? u.label : unitLabel}</span>}
+        {(u || unitLabel) && <span className="field-unit">{u ? u.label : t(unitLabel!)}</span>}
       </span>
       {slider && min !== undefined && max !== undefined && (
         <input
@@ -91,7 +92,7 @@ export function NumberField({ label, value, onChange, quantity, unitLabel, step,
           step={step ?? 1}
           value={toDisp(value ?? auto ?? min)}
           onChange={(e) => onChange(fromDisp(Number(e.target.value)))}
-          aria-label={label}
+          aria-label={t(label)}
         />
       )}
     </div>
@@ -107,16 +108,17 @@ interface SelectFieldProps<T extends string> {
 
 export function SelectField<T extends string>({ label, value, options, onChange }: SelectFieldProps<T>) {
   const id = useId();
+  const t = useT();
   return (
     <div className="field">
       <span className="field-label">
-        <label htmlFor={id}>{label}</label>
+        <label htmlFor={id}>{t(label)}</label>
         <HelpTip topic={label} />
       </span>
       <select id={id} value={value} onChange={(e) => onChange(e.target.value as T)}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
-            {o.label}
+            {t(o.label)}
           </option>
         ))}
       </select>
@@ -125,12 +127,13 @@ export function SelectField<T extends string>({ label, value, options, onChange 
 }
 
 export function Section({ title, summary, children, icon, defaultOpen = true }: { title: string; summary?: string; children: ReactNode; icon?: IconName; defaultOpen?: boolean }) {
+  const t = useT();
   return (
     <details className="section" open={defaultOpen}>
       <summary>
         <span className="section-title">
           {icon && <Icon name={icon} className="section-icon" />}
-          {title}
+          {t(title)}
         </span>
         {summary && <span className="section-summary">{summary}</span>}
       </summary>

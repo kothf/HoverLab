@@ -1,4 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { getLang, useT } from '../i18n';
+import { HELP_CONTENT_HE } from '../i18n/guide-he';
+import { HELP_CONTENT_RU } from '../i18n/guide-ru';
+import { ext, REPO } from './helpLinks';
 import { Icon } from './Icons';
 
 export type HelpTab = 'start' | 'calc' | 'optimizer' | 'library' | 'model' | 'warnings' | 'faq' | 'about';
@@ -14,14 +18,6 @@ const TABS: { key: HelpTab; label: string }[] = [
   { key: 'about', label: 'About & credits' },
 ];
 
-const REPO = 'https://github.com/kothf/HoverLab';
-
-const ext = (href: string, text: ReactNode) => (
-  <a href={href} target="_blank" rel="noopener noreferrer">
-    {text}
-  </a>
-);
-
 const CONTENT: Record<HelpTab, ReactNode> = {
   start: (
     <>
@@ -35,7 +31,7 @@ const CONTENT: Record<HelpTab, ReactNode> = {
         </li>
         <li>
           In the <strong>Calculator</strong> tab, replace parts section by section. Each section has a search box: type a brand or size such as{' '}
-          <code>tmotor 2207</code> or <code>gemfan 5</code>. If your part is missing, choose <em>Can't find it? Define your own</em>.
+          <code>tmotor 2207</code> or <code>gemfan 5</code>. If your part is missing, choose <em>Can't find it? Define a custom part</em>.
         </li>
         <li>
           Read the results on the right: the drone sketch, the key numbers, the status lights, warnings, the <strong>Conclusions</strong> card, charts and
@@ -141,7 +137,7 @@ const CONTENT: Record<HelpTab, ReactNode> = {
           numbers.
         </li>
         <li>
-          <strong>Custom parts</strong>: <em>+ New part</em>, <em>+ From current config</em>, or <em>Can't find it? Define your own</em> in any search. They are
+          <strong>Custom parts</strong>: <em>+ New part</em>, <em>+ From current config</em>, or <em>Can't find it? Define a custom part</em> in any search. They are
           stored in this browser. Use <em>Export custom</em> / <em>Import JSON</em> to back them up or move them to another device.
         </li>
       </ul>
@@ -271,7 +267,10 @@ interface Props {
 }
 
 export function HelpDialog({ initial = 'start', onClose }: Props) {
+  const t = useT();
   const [tab, setTab] = useState<HelpTab>(initial);
+  const lang = getLang();
+  const content = lang === 'ru' ? HELP_CONTENT_RU : lang === 'he' ? HELP_CONTENT_HE : CONTENT;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -281,26 +280,26 @@ export function HelpDialog({ initial = 'start', onClose }: Props) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal help-modal" role="dialog" aria-label="HoverLab help" onClick={(e) => e.stopPropagation()}>
+      <div className="modal help-modal" role="dialog" aria-label={t('HoverLab help')} onClick={(e) => e.stopPropagation()}>
         <header className="modal-head">
           <h2>
-            <Icon name="library" /> {tab === 'about' ? 'About HoverLab' : 'HoverLab help'}
+            <Icon name="library" /> {tab === 'about' ? t('About HoverLab') : t('HoverLab help')}
           </h2>
-          <button className="btn ghost" onClick={onClose} aria-label="Close">
+          <button className="btn ghost" onClick={onClose} aria-label={t('Close')}>
             ×
           </button>
         </header>
         <div className="help-layout">
-          <nav className="help-nav" aria-label="Help topics">
-            {TABS.map((t) => (
-              <button key={t.key} className={tab === t.key ? 'active' : ''} onClick={() => setTab(t.key)}>
-                {t.label}
+          <nav className="help-nav" aria-label={t('Help topics')}>
+            {TABS.map((x) => (
+              <button key={x.key} className={tab === x.key ? 'active' : ''} onClick={() => setTab(x.key)}>
+                {t(x.label)}
               </button>
             ))}
           </nav>
           <article className="help-body">
-            <h3>{TABS.find((t) => t.key === tab)!.label}</h3>
-            {CONTENT[tab]}
+            <h3>{t(TABS.find((x) => x.key === tab)!.label)}</h3>
+            {content[tab]}
           </article>
         </div>
       </div>
