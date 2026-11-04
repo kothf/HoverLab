@@ -28,6 +28,14 @@ export interface Drive {
 }
 
 const TWO_PI = 2 * Math.PI;
+
+/**
+ * ESC switching and gate-drive losses as a fraction of V_bat·I_motor. Switching energy per PWM
+ * edge scales with the bus voltage and the phase current, not with the duty cycle, so it is
+ * modelled as an extra input current k·I drawn at V_bat. 0.02 gives ~97–98 % at full throttle
+ * and ~90 % at 20 % duty, in line with bench data for BLHeli/AM32 class ESCs.
+ */
+export const ESC_SWITCHING_LOSS = 0.02;
 /** 60 / 2π: converts Kv in rpm/V to Kt in N·m/A (Kt = 60 / (2π·Kv)). */
 export const RPM_PER_RAD_S = 60 / TWO_PI;
 
@@ -35,7 +43,8 @@ export const RPM_PER_RAD_S = 60 / TWO_PI;
  * Steady-state operating point at a given shaft speed.
  * Propeller: T = Ct·ρ·n²·D⁴, P = Cp·ρ·n³·D⁵ (n in rev/s, D in m).
  * Motor (Drela first-order model): I = I0 + Q·Kv·2π/60, V_m = RPM/Kv + I·Rm.
- * ESC (averaged PWM, throttle τ): τ·V_bat = V_m + I·R_esc, I_bat = N·τ·I + I_acc.
+ * ESC (averaged PWM, throttle τ): τ·V_bat = V_m + I·R_esc, I_bat = N·(τ + k_sw)·I + I_acc,
+ * where k_sw·V_bat·I is the switching loss (ESC_SWITCHING_LOSS).
  * Battery: V_bat = V_oc − I_bat·R_bat.
  * Solving the last three for τ gives a quadratic. Throttle may exceed 1 for unreachable speeds.
  */
@@ -51,8 +60,8 @@ export function opAtRpm(dr: Drive, rpm: number, shaftPower?: number): OperatingP
   const motorVoltage = rpm / dr.kv + current * dr.rm;
   const vNeed = motorVoltage + current * dr.resc;
 
-  const a = dr.voc - dr.iacc * dr.rbat;
   const b = dr.motors * current * dr.rbat;
+  const a = dr.voc - dr.iacc * dr.rbat - b * ESC_SWITCHING_LOSS;
   let throttle: number;
   if (b < 1e-12) throttle = vNeed / a;
   else {
@@ -61,9 +70,10 @@ export function opAtRpm(dr: Drive, rpm: number, shaftPower?: number): OperatingP
   }
 
   const tau = Number.isFinite(throttle) ? throttle : 1;
-  const batteryCurrent = dr.motors * tau * current + dr.iacc;
+  const escIn = tau + ESC_SWITCHING_LOSS; // ESC input current per amp of motor current
+  const batteryCurrent = dr.motors * escIn * current + dr.iacc;
   const batteryVoltage = dr.voc - batteryCurrent * dr.rbat;
-  const drivePower = dr.motors * tau * current * batteryVoltage;
+  const drivePower = dr.motors * escIn * current * batteryVoltage;
   const motorIn = motorVoltage * current;
   const thrustG = (thrustN / G) * 1000;
   const tipSpeed = Math.PI * dr.d * n;
@@ -82,7 +92,7 @@ export function opAtRpm(dr: Drive, rpm: number, shaftPower?: number): OperatingP
     mechPowerPerMotor: mechPower,
     motorLoss: motorIn - mechPower,
     motorEfficiency: motorIn > 0 ? mechPower / motorIn : 0,
-    escEfficiency: tau > 0 && batteryVoltage > 0 ? motorVoltage / (tau * batteryVoltage) : 0,
+    escEfficiency: tau > 0 && batteryVoltage > 0 ? motorVoltage / (escIn * batteryVoltage) : 0,
     specificThrust: drivePower > 0 ? (thrustG * dr.motors) / drivePower : 0,
     cRate: batteryCurrent / dr.capacityAh,
     tipMach: tipSpeed / dr.speedOfSound,

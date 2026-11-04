@@ -109,7 +109,7 @@ export const HELP: Record<string, string> = {
   'Electric power': 'Power drawn from the battery.',
   'Shaft power per motor': 'Mechanical power delivered to one propeller.',
   'Motor efficiency': 'Shaft power ÷ electrical power into the motor. Peaks at medium load; 75–88 % is typical.',
-  'ESC efficiency': 'Power out to the motor ÷ power in, from resistive losses only.',
+  'ESC efficiency': 'Power out to the motor ÷ power in: resistive losses plus switching losses (about 2 % of V_bat × motor current), so it is lowest at low throttle.',
   'Battery C-rate': 'Battery current ÷ capacity.',
   'Prop tip Mach': 'Blade tip speed as a fraction of the speed of sound. Above 0.7 efficiency drops and noise rises sharply.',
   'Motor temp, hover': 'Steady motor temperature while hovering.',
