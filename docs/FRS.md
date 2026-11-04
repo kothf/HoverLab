@@ -245,6 +245,17 @@ The software generates interactive vector charts:
 +--------------------------+--------------------------+-----------------------------------+
 ```
 
+### 4.3 Conclusions
+
+Under the warnings, a Conclusions card reads the results in plain language (`src/ui/insights.ts`):
+
+* **Verdict:** what the build suits (agile, endurance, general purpose, payload carrier or marginal) and which part has the tightest margin (battery C, motor current, ESC current, motor heat or hover throttle).
+* **Payload:** the practical extra payload, which keeps thrust/weight ≥ 2 and hover throttle ≤ 60 %, next to the lift-off maximum at 80 % throttle, and the hover time lost per extra 100 g.
+* **Tips:** hover far below the motor's peak efficiency (8+ points), ESCs loaded under 35 %, battery heavier than 65 % of AUW.
+* **Cautions:** best-range speed stuck at the model's top-speed cap.
+
+Battery checks behind the C indicator: warning above 90 % of the continuous C rating, and when full throttle with the pack at the end of its usable capacity sags below the chemistry minimum.
+
 ---
 
 ## 5. Non-Functional Requirements

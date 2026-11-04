@@ -161,6 +161,9 @@ export interface Results {
   maxSpeed: number; // m/s
   range: { speed: number; distance: number; time: number } | null; // m/s, km, min
   maxPayload: number; // extra payload g at which hover throttle hits the limit
+  practicalPayload: number; // extra payload g that keeps thrust/weight ≥ 2 and hover throttle ≤ 60 %
+  payloadCost: number; // min of hover time lost per extra 100 g
+  sagEnd: number; // V per cell at full throttle with the pack at the end of its usable capacity
   curves: CurvePoint[];
   payloadEnvelope: PayloadPoint[];
   warnings: Warning[];

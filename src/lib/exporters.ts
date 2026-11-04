@@ -44,6 +44,10 @@ export function reportCsv(c: Config, r: Results): string {
     ['Max climb (m/s)', r2(r.climbRate, 1)],
     ['Max speed (km/h)', r2(r.maxSpeed * 3.6, 0)],
     ['Best range (km)', r.range ? r2(r.range.distance) : ''],
+    ['Practical extra payload (g)', r2(r.practicalPayload, 0)],
+    ['Max extra payload (g)', r2(r.maxPayload, 0)],
+    ['Hover time lost per 100 g (s)', r2(r.payloadCost * 60, 0)],
+    ['Full-throttle sag at end of pack (V/cell)', r2(r.sagEnd)],
     [],
     ['Throttle (%)', 'RPM', 'Total thrust (g)', 'Battery current (A)', 'Power (W)', 'Motor eff (%)', 'ESC eff (%)', 'g/W', 'C-rate'],
     ...r.curves.map((p) => [

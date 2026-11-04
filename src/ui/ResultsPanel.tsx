@@ -6,6 +6,7 @@ import { Charts, type Snapshot } from './Charts';
 import { useUnits } from './context';
 import { DroneSketch } from './DroneSketch';
 import { HelpTip } from './HelpTip';
+import { deriveInsights } from './insights';
 
 interface Props {
   config: Config;
@@ -83,6 +84,20 @@ export function ResultsPanel({ config, results: r, errors, snapshots, onSnapshot
         </ul>
       )}
 
+      <div className="card conclusions">
+        <h3>
+          Conclusions
+          <HelpTip topic="Conclusions" />
+        </h3>
+        <ul>
+          {deriveInsights(config, r, system).map((i) => (
+            <li key={i.code} className={i.tone}>
+              <strong>{i.title}.</strong> {i.text}
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className="compare-bar">
         <button className="btn small" onClick={onSnapshot} disabled={snapshots.length >= 3} title="Pin the current results to overlay them on the thrust chart">
           + Pin for comparison ({snapshots.length}/3)
@@ -154,7 +169,10 @@ function MetricsTable({ config, r }: { config: Config; r: Results }) {
         <dl>
           <dt>Motor temp, hover<HelpTip topic="Motor temp, hover" /></dt><dd>{fmt(system, 'temp', r.motorTempHover)}</dd>
           <dt>Motor temp, {MAX_TEMP_WINDOW_S} s full<HelpTip topic="Motor thermal" /></dt><dd>{fmt(system, 'temp', r.motorTempMax)}</dd>
+          <dt>Practical extra payload<HelpTip topic="Practical extra payload" /></dt><dd>{fmt(system, 'mass', r.practicalPayload)}</dd>
           <dt>Max extra payload<HelpTip topic="Max extra payload" /></dt><dd>{fmt(system, 'mass', r.maxPayload)}</dd>
+          <dt>Hover time per {fmt(system, 'mass', 100)}<HelpTip topic="Hover time per 100 g" /></dt><dd>−{fmtNum(r.payloadCost * 60)} s</dd>
+          <dt>Sag at end of pack<HelpTip topic="Sag at end of pack" /></dt><dd>{fmtNum(r.sagEnd, 2)} V/cell</dd>
           <dt>Air density<HelpTip topic="Air density" /></dt><dd>{fmtNum(r.airDensity, 3)} kg/m³</dd>
         </dl>
         <dl>

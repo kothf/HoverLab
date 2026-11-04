@@ -39,9 +39,9 @@ export const PRESETS: Config[] = [
     { motor: 'bh-1507-3800', prop: 'hq-3x3x3', battery: 'tt-4s-850', esc: 'hb-tekko-50' },
   ),
   preset(
-    '7" long range 6S3P Li-ion',
-    { name: 'Generic 7" long-range (incl. GPS)', layout: 'quadX', weight: 230, payload: 0, maxPropIn: 7.5, accessoryCurrent: 1.2, dragArea: null },
-    { motor: 'tm-2806-1300', prop: 'gf-7035-2', battery: 'mol-p42a', esc: 'hb-tekko-50' },
+    '6" long range 6S3P Li-ion',
+    { name: 'Generic 6" long range (incl. GPS)', layout: 'quadX', weight: 200, payload: 0, maxPropIn: 6, accessoryCurrent: 1.2, dragArea: null },
+    { motor: 'tm-2806-1300', prop: 'hq-6x4x3', battery: 'mol-p45b', esc: 'hb-tekko-50' },
     { s: 6, p: 3 },
   ),
   preset(
