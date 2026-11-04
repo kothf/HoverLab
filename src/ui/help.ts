@@ -16,7 +16,7 @@ export const HELP: Record<string, string> = {
   'Max prop size':
     'Largest propeller the frame can swing without the blades hitting each other or the frame. Used for the "prop too large" warning and as the optimizer limit.',
   'Frame + electronics':
-    'Everything except motors, props, ESCs and battery: frame, flight controller, receiver, VTX, camera, GPS, wiring, straps. Typical: 5" freestyle 150–200 g, 450 class 400–500 g.',
+    'Everything except motors, props, ESCs, battery and payload: frame, flight controller, receiver, VTX, FPV camera, GPS, wiring, straps. Payload is NOT included; it is entered separately and added on top. Typical: 5" freestyle 150–200 g, 450 class 400–500 g.',
   Payload:
     'Extra mass you carry: action camera, gimbal, sensors, delivery load. Added to the all-up weight.',
   'Accessory current':
@@ -76,7 +76,7 @@ export const HELP: Record<string, string> = {
   Objective:
     'Maximum flight endurance: longest hover time for your payload. Maximum payload: most spare lift while still meeting the target endurance.',
   'Battery chemistry': 'Chemistry the optimizer sizes the battery with. Li-ion usually wins endurance; LiPo wins payload and punch.',
-  'Target payload': 'Payload the design must carry.',
+  'Target payload': 'Payload the design must carry (action camera, gimbal, sensors, cargo). Added on top of Frame + electronics; 0 means no payload.',
   'Target endurance': 'Hover time to reach. In payload mode designs below it are rejected; in endurance mode results that reach it are shown in green.',
   'Min thrust/weight': 'Required ratio of full-throttle thrust to all-up weight. 2:1 is the minimum for safe control; FPV freestyle uses 5–10:1.',
   'Max hover throttle': 'Highest acceptable hover throttle. Lower leaves more control authority; 50–60 % is typical.',
