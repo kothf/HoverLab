@@ -387,3 +387,5 @@ th .help, dt .help { margin-inline-start: 5px; }
 .help-table th, .help-table td { text-align: start; white-space: normal; vertical-align: top; padding: 6px 8px; }
 .help-table thead th { color: var(--muted); }
 .help-body ol > li { margin-bottom: 6px; }
+
+.menu-list kbd { float: inline-end; margin-inline-start: 12px; font: 11px ui-monospace, monospace; color: var(--muted); }
