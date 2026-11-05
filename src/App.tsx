@@ -6,6 +6,7 @@ import { download, reportCsv, slug } from './lib/exporters';
 import { configFromHash, decodeConfig, shareUrl } from './lib/share';
 import {
   loadCurrent,
+  emptyLibrary,
   loadCustomLibrary,
   loadPrefs,
   loadSavedConfigs,
@@ -24,7 +25,8 @@ import { HelpDialog, type HelpTab } from './ui/HelpDialog';
 import { LibraryDialog } from './ui/LibraryDialog';
 import { OptimizerPanel } from './ui/OptimizerPanel';
 import { ResultsPanel } from './ui/ResultsPanel';
-import { TopBar, type View } from './ui/TopBar';
+import { TopBar, type FileAction, type View } from './ui/TopBar';
+import { makeBackup, openTextFile, parseHoverLabFile, saveTextFile, type FileHandle } from './lib/files';
 import { simEngine } from './worker/engineClient';
 import { LangContext, detectLang, dirOf, isLang, setLang, t, tName, type Lang } from './i18n';
 import type { Msg } from './engine/types';
@@ -109,19 +111,92 @@ export default function App() {
     storeSavedConfigs(next);
   };
 
-  const importConfig = async (file: File) => {
-    const text = await file.text();
-    let c: Config | null = null;
+  // Design files on the user's computer. The handle lets plain Save overwrite the same file.
+  const [fileHandle, setFileHandle] = useState<FileHandle | null>(null);
+
+  const saveToPc = async (asNew: boolean) => {
     try {
-      c = JSON.parse(text) as Config;
-    } catch {
-      c = decodeConfig(text.trim());
+      const h = await saveTextFile(JSON.stringify(config, null, 2), `${slug(config.name)}.hoverlab.json`, asNew ? null : fileHandle);
+      if (h === undefined) return;
+      if (h) setFileHandle(h);
+      notify(h ? t('Saved to {name}', { name: h.name }) : t('Downloaded {name}', { name: `${slug(config.name)}.hoverlab.json` }));
+    } catch (e) {
+      notify(t('Could not save the file: {error}', { error: String(e) }));
     }
-    if (c && c.motor && c.prop && c.battery) {
-      load(c);
-      notify(t('Loaded {name}', { name: file.name }));
-    } else notify(t('That file is not a HoverLab configuration'));
   };
+
+  const backupToPc = async () => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    try {
+      const h = await saveTextFile(JSON.stringify(makeBackup(config, saved, custom), null, 2), `hoverlab-backup-${stamp}.json`);
+      if (h !== undefined) notify(t('Backup saved: {n} designs, {m} custom parts', { n: saved.length, m: Object.values(custom).flat().length }));
+    } catch (e) {
+      notify(t('Could not save the file: {error}', { error: String(e) }));
+    }
+  };
+
+  const importText = (text: string, name: string, handle: FileHandle | null) => {
+    const parsed = parseHoverLabFile(text);
+    if (parsed?.kind === 'design') {
+      load(parsed.config);
+      setFileHandle(handle);
+      notify(t('Loaded {name}', { name }));
+    } else if (parsed?.kind === 'backup') {
+      const b = parsed.backup;
+      const names = new Set(b.saved.map((x) => x.name));
+      const nextSaved = [...b.saved, ...saved.filter((x) => !names.has(x.name))];
+      setSaved(nextSaved);
+      storeSavedConfigs(nextSaved);
+      const merged = emptyLibrary();
+      for (const k of Object.keys(merged) as (keyof Library)[]) {
+        const ids = new Set(b.custom[k].map((x) => x.id));
+        (merged[k] as unknown[]) = [...b.custom[k], ...custom[k].filter((x) => !ids.has(x.id))];
+      }
+      updateCustom(merged);
+      load(b.current);
+      setFileHandle(null);
+      notify(t('Restored {n} designs and {m} custom parts', { n: b.saved.length, m: Object.values(b.custom).flat().length }));
+    } else {
+      const shared = decodeConfig(text.trim());
+      if (shared) {
+        load(shared);
+        notify(t('Loaded {name}', { name }));
+      } else notify(t('That file is not a HoverLab configuration'));
+    }
+  };
+
+  const openFromPc = async () => {
+    try {
+      const f = await openTextFile();
+      if (f) importText(f.text, f.name, f.handle);
+    } catch (e) {
+      notify(t('Could not open the file: {error}', { error: String(e) }));
+    }
+  };
+
+  const onFile = (action: FileAction) => {
+    if (action === 'save') void saveToPc(false);
+    else if (action === 'saveAs') void saveToPc(true);
+    else if (action === 'open' || action === 'restore') void openFromPc();
+    else if (action === 'backup') void backupToPc();
+    else if (action === 'browser') save();
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === 's') {
+        e.preventDefault();
+        void saveToPc(e.shiftKey);
+      } else if (k === 'o') {
+        e.preventDefault();
+        void openFromPc();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   const exportAs = async (kind: 'csv' | 'pdf' | 'json' | 'link') => {
     if (kind === 'json') download(`${slug(config.name)}.hoverlab.json`, JSON.stringify(config, null, 2), 'application/json');
@@ -166,9 +241,9 @@ export default function App() {
           prefs={prefs}
           canExport={!!results}
           onLoad={load}
-          onSave={save}
           onDeleteSaved={deleteSaved}
-          onImportConfig={importConfig}
+          onFile={onFile}
+          fileName={fileHandle?.name ?? null}
           onExport={exportAs}
           onLibrary={() => setLibraryOpen({ kind: 'motor', model: null })}
           onHelp={setHelpTab}

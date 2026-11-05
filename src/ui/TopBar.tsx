@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { PRESETS } from '../data/presets';
 import type { Config } from '../engine/types';
 import type { Prefs } from '../lib/storage';
@@ -6,6 +5,7 @@ import { Icon } from './Icons';
 import { LANGS, tName, useT, type Lang } from '../i18n';
 
 export type View = 'calc' | 'optimizer';
+export type FileAction = 'save' | 'saveAs' | 'open' | 'browser' | 'backup' | 'restore';
 
 interface Props {
   view: View;
@@ -15,9 +15,9 @@ interface Props {
   prefs: Prefs;
   canExport: boolean;
   onLoad: (c: Config) => void;
-  onSave: () => void;
   onDeleteSaved: (name: string) => void;
-  onImportConfig: (file: File) => void;
+  onFile: (action: FileAction) => void;
+  fileName: string | null;
   onExport: (kind: 'csv' | 'pdf' | 'json' | 'link') => void;
   onLibrary: () => void;
   onHelp: (tab: 'start' | 'about') => void;
@@ -28,8 +28,7 @@ function closeMenu(el: HTMLElement) {
   el.closest('details')?.removeAttribute('open');
 }
 
-export function TopBar({ view, onView, config, saved, prefs, canExport, onLoad, onSave, onDeleteSaved, onImportConfig, onExport, onLibrary, onHelp, onPrefs }: Props) {
-  const fileRef = useRef<HTMLInputElement>(null);
+export function TopBar({ view, onView, config, saved, prefs, canExport, onLoad, onDeleteSaved, onFile, fileName, onExport, onLibrary, onHelp, onPrefs }: Props) {
   const t = useT();
   return (
     <header className="topbar">
@@ -59,9 +58,16 @@ export function TopBar({ view, onView, config, saved, prefs, canExport, onLoad, 
         <details className="menu">
           <summary className="btn">{t('Load / Save')}</summary>
           <div className="menu-list">
-            <button onClick={(e) => { onSave(); closeMenu(e.currentTarget); }}>{t('Save current…')}</button>
-            <button onClick={(e) => { fileRef.current?.click(); closeMenu(e.currentTarget); }}>{t('Open config file…')}</button>
-            {saved.length > 0 && <div className="menu-sep">{t('Saved configurations')}</div>}
+            <div className="menu-sep">{t('On this computer')}</div>
+            <button onClick={(e) => { onFile('save'); closeMenu(e.currentTarget); }}>
+              {fileName ? t('Save to {name}', { name: fileName }) : t('Save to file…')} <kbd>Ctrl+S</kbd>
+            </button>
+            <button onClick={(e) => { onFile('saveAs'); closeMenu(e.currentTarget); }}>{t('Save as new file…')} <kbd>Ctrl+Shift+S</kbd></button>
+            <button onClick={(e) => { onFile('open'); closeMenu(e.currentTarget); }}>{t('Open file…')} <kbd>Ctrl+O</kbd></button>
+            <button onClick={(e) => { onFile('backup'); closeMenu(e.currentTarget); }}>{t('Back up everything to a file…')}</button>
+            <button onClick={(e) => { onFile('restore'); closeMenu(e.currentTarget); }}>{t('Restore from backup file…')}</button>
+            <div className="menu-sep">{t('In this browser')}</div>
+            <button onClick={(e) => { onFile('browser'); closeMenu(e.currentTarget); }}>{t('Save in browser…')}</button>
             {saved.map((s) => (
               <div key={s.name} className="menu-row">
                 <button onClick={(e) => { onLoad(s); closeMenu(e.currentTarget); }}>{tName(s.name)}</button>
@@ -103,7 +109,6 @@ export function TopBar({ view, onView, config, saved, prefs, canExport, onLoad, 
             </option>
           ))}
         </select>
-        <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { if (e.target.files?.[0]) onImportConfig(e.target.files[0]); e.target.value = ''; }} />
       </nav>
     </header>
   );

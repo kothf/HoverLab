@@ -357,7 +357,14 @@ const CONTENT: Record<HelpTab, ReactNode> = {
       <h4>Why does a part say "est."?</h4>
       <p>Its maker didn't publish some values, so they were estimated from similar parts. Enter datasheet values when you have them.</p>
       <h4>Where are my saved builds and custom parts?</h4>
-      <p>In this browser's local storage. Export them (Config file, Export custom) to keep a copy.</p>
+      <p>
+        Wherever you choose. Load / Save → <strong>Save to file…</strong> (Ctrl+S) writes the design as a <code>.hoverlab.json</code> file on your computer;
+        after the first save, Ctrl+S saves to the same file again, and <strong>Open file…</strong> (Ctrl+O) loads it back.{' '}
+        <strong>Back up everything to a file…</strong> stores all designs saved in the browser plus your custom parts in one file, and{' '}
+        <strong>Restore from backup file…</strong> brings them back on any computer. <em>Save in browser…</em> keeps a quick copy in this browser only;
+        clearing the browser's site data deletes it. In Chrome and Edge you pick the folder and file name; other browsers download the file to your
+        Downloads folder.
+      </p>
       <h4>Does it work offline?</h4>
       <p>Yes. After the first visit HoverLab is cached and can be installed as an app from the browser menu.</p>
       <h4>I still see an old version.</h4>
